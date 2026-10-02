@@ -19,7 +19,7 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
     setError('');
 
     if (!fullName.trim()) {
-      setError('Pakiusap ilagay ang iyong buong pangalan.');
+      setError('Please enter your full name.');
       return;
     }
 
@@ -40,7 +40,7 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
         onSaved(data as Profile);
       }
     } catch {
-      setError('Network error. Subukan muli.');
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
       role="dialog"
       aria-labelledby="setname-title"
     >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         {/* Header */}
         <div className="bg-teal-primary px-6 py-6 text-center">
           <div className="flex justify-center mb-3">
@@ -62,10 +62,10 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
             </div>
           </div>
           <h2 id="setname-title" className="text-lg font-bold text-white">
-            Kumusta! Sino ka?
+            Welcome! Set Your Name
           </h2>
           <p className="text-teal-light/80 text-sm mt-1">
-            Ilagay ang iyong buong pangalan para makilala ka.
+            Please enter your full name to get started.
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
               htmlFor="full-name"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
             >
-              Buong Pangalan
+              Full Name
             </label>
             <input
               id="full-name"
@@ -85,16 +85,16 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Hal: Juan dela Cruz"
+              placeholder="e.g. John Lloyd Santos"
               className={cn(
                 'w-full px-4 py-2.5 rounded-lg border text-sm',
-                'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
-                'border-gray-300 dark:border-gray-600',
+                'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
+                'border-gray-300 dark:border-white/10',
                 'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:border-transparent'
               )}
             />
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-              ⚠️ Ang pangalang ito ay hindi na mababago pagkatapos.
+              ⚠️ This name cannot be changed after saving.
             </p>
           </div>
 
@@ -120,10 +120,10 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
-                <span>Nagsasave...</span>
+                <span>Saving...</span>
               </>
             ) : (
-              <span>I-save ang Pangalan</span>
+              <span>Save Name</span>
             )}
           </button>
         </form>

@@ -201,7 +201,7 @@ export function FolderChips({
       {modalMode === 'delete' && targetFolder && (
         <Modal
           title="Delete Folder"
-          message={`Sigurado ka bang gusto mong burahin ang folder na "${targetFolder.name}"? Hindi ito mababawi.`}
+          message={`Are you sure you want to delete the folder "${targetFolder.name}"? This cannot be undone.`}
           confirmLabel="Delete"
           danger
           onConfirm={handleDelete}

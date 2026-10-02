@@ -1,19 +1,16 @@
 -- ============================================================
--- DocuVault — Seed: First Manager Account
+-- DocuVault — Create First Manager Account
 -- ============================================================
--- INSTRUCTIONS:
--- 1. Go to Supabase Dashboard → Authentication → Users
--- 2. Click "Add User" → "Create new user"
--- 3. Email: manager@docaccess.local
--- 4. Password: Manager@123  (change this after first login!)
--- 5. Check "Auto Confirm User" → click "Create User"
--- 6. Copy the UUID of the newly created user
--- 7. Replace 'PASTE-UUID-HERE' below with that UUID
--- 8. Run this SQL in the Supabase SQL Editor
+-- STEP 1: Go to Supabase Dashboard → Authentication → Users
+--         → Add User → Create new user
+--         Email:    manager@docuvault.app
+--         Password: Manager@123
+--         ✅ Check "Auto Confirm User" → Create User
+--
+-- STEP 2: Run this SQL in Supabase SQL Editor
 -- ============================================================
 
--- Step 1: Update the auto-created profile to manager role
--- (The trigger already created a 'user' profile — we just upgrade it)
+-- Upgrade the auto-created profile to manager role
 UPDATE public.profiles
 SET
   role        = 'manager',
@@ -21,9 +18,11 @@ SET
   name_locked = true
 WHERE username = 'manager';
 
+-- Verify it worked (should return 1 row with role = 'manager')
+SELECT username, role, full_name FROM public.profiles WHERE username = 'manager';
+
 -- ============================================================
--- OPTIONAL: Create a test user account
--- Do the same steps above but with email: user1@docaccess.local
--- Then run:
--- UPDATE public.profiles SET full_name = 'Test User', name_locked = false WHERE username = 'user1';
+-- Login credentials for the app:
+--   Username: manager
+--   Password: Manager@123
 -- ============================================================

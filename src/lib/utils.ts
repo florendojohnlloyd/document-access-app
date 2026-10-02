@@ -16,9 +16,9 @@ export function formatDate(dateStr: string): string {
 }
 
 export function usernameToEmail(username: string): string {
-  return `${username}@docaccess.local`;
+  return `${username.toLowerCase()}@docuvault.app`;
 }
 
 export function emailToUsername(email: string): string {
-  return email.replace('@docaccess.local', '');
+  return email.replace('@docuvault.app', '').replace('@docaccess.local', '');
 }

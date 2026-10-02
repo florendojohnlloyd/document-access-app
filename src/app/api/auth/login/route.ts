@@ -5,7 +5,8 @@ import { usernameToEmail } from '@/lib/utils';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { username?: string; password?: string };
-    const { username, password } = body;
+    const { username: rawUsername, password } = body;
+    const username = rawUsername?.trim().toLowerCase();
 
     if (!username || !password) {
       return NextResponse.json({ error: 'Username at password ay required.' }, { status: 400 });

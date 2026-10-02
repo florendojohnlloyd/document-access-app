@@ -91,8 +91,8 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
                     className={cn(
                       'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
                       user.role === 'manager'
-                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                        : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                        ? 'bg-amber-500/15 dark:bg-yellow-900/30 text-amber-300 dark:text-yellow-300'
+                        : 'bg-blue-600/10 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                     )}
                   >
                     {user.role === 'manager' ? (
@@ -151,5 +151,6 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
     </>
   );
 }
+
 
 

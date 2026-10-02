@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sun, Moon, Menu, LogOut, Bell } from 'lucide-react';
+import { Sun, Moon, LogOut, Menu } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { cn } from '@/lib/utils';
 import type { Profile } from '@/types';
@@ -33,56 +33,64 @@ export function Header({ profile, onMenuClick, title }: HeaderProps) {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-6 py-3 flex items-center justify-between gap-4 sticky top-0 z-10">
+    <header className="bg-slate-900 border-b border-slate-800 px-4 h-14 flex items-center justify-between gap-4 sticky top-0 z-10">
+      {/* Left: hamburger + title */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          aria-label="Open sidebar"
+          className="flex flex-col gap-1.5 p-2 rounded-lg hover:bg-slate-800 transition-colors group"
+          aria-label="Toggle menu"
         >
-          <Menu className="w-5 h-5" />
+          <span className="block w-5 h-0.5 bg-slate-400 group-hover:bg-slate-900 transition-colors rounded-full" />
+          <span className="block w-4 h-0.5 bg-slate-400 group-hover:bg-slate-900 transition-colors rounded-full" />
+          <span className="block w-5 h-0.5 bg-slate-400 group-hover:bg-slate-900 transition-colors rounded-full" />
         </button>
-        {title && <h1 className="text-base font-semibold text-slate-800 dark:text-white">{title}</h1>}
+        {title && (
+          <h1 className="text-sm font-semibold text-slate-200 hidden sm:block">{title}</h1>
+        )}
       </div>
 
+      {/* Right: controls */}
       <div className="flex items-center gap-1">
-        <button className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Notifications">
-          <Bell className="w-4 h-4" />
-        </button>
-
+        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+        <div className="w-px h-5 bg-slate-800 mx-1" />
 
+        {/* User avatar + name */}
         <div className="flex items-center gap-2.5 px-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
             <span className="text-white text-xs font-bold">{initials}</span>
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-slate-800 dark:text-white leading-tight">{displayName}</p>
-            <p className={cn('text-xs font-medium',
-              profile.role === 'manager' ? 'text-amber-500' : 'text-indigo-500 dark:text-indigo-400'
+            <p className="text-sm font-medium text-white leading-tight">{displayName}</p>
+            <p className={cn('text-xs',
+              profile.role === 'manager' ? 'text-amber-400' : 'text-blue-400'
             )}>
               {profile.role === 'manager' ? 'Manager' : 'User'}
             </p>
           </div>
         </div>
 
+        {/* Sign out */}
         <button
           onClick={handleLogout}
           disabled={loggingOut}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-50 ml-1"
+          className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 ml-1"
         >
           <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
+          <span className="hidden sm:inline text-xs font-medium">
+            {loggingOut ? 'Signing out...' : 'Sign Out'}
+          </span>
         </button>
       </div>
     </header>
   );
 }
+

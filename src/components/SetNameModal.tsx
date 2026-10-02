@@ -53,11 +53,11 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
       role="dialog"
       aria-labelledby="setname-title"
     >
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="bg-slate-900 dark:bg-slate-800 border border-slate-800 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-br from-indigo-600 to-violet-600 px-6 py-6 text-center">
           <div className="flex justify-center mb-3">
-            <div className="bg-white/20 rounded-full p-3">
+            <div className="bg-slate-900/20 rounded-full p-3">
               <User className="w-7 h-7 text-white" />
             </div>
           </div>
@@ -88,8 +88,8 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
               placeholder="e.g. John Lloyd Santos"
               className={cn(
                 'w-full px-4 py-2.5 rounded-lg border text-sm',
-                'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
-                'border-gray-300 dark:border-white/10',
+                'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
+                'border-slate-700 dark:border-white/10',
                 'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
               )}
             />
@@ -131,3 +131,4 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
     </div>
   );
 }
+

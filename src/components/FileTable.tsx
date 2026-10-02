@@ -189,7 +189,7 @@ export function FileTable({
                           }}
                           className={cn(
                             'p-1.5 rounded-lg transition-colors',
-                            'text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20',
+                            'text-gray-400 hover:text-blue-500 hover:bg-blue-600/10 dark:hover:bg-blue-900/20',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
                           )}
                           aria-label={`Rename ${file.name}`}
@@ -262,4 +262,5 @@ export function FileTable({
     </>
   );
 }
+
 

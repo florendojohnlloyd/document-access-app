@@ -109,7 +109,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
             ? 'border-indigo-600 bg-indigo-600/5'
             : selectedFile
             ? 'border-indigo-600/50 bg-indigo-600/5 cursor-default'
-            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-600/50 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+            : 'border-slate-700 dark:border-gray-600 hover:border-indigo-600/50 hover:bg-slate-50 dark:hover:bg-slate-700/50'
         )}
         role="button"
         tabIndex={0}
@@ -166,8 +166,8 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
             onChange={(e) => setSelectedFolderId(e.target.value)}
             className={cn(
               'flex-1 px-3 py-2 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
-              'border-gray-300 dark:border-gray-600',
+              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
+              'border-slate-700 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
             aria-label="Select folder"
@@ -226,4 +226,5 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
     </div>
   );
 }
+
 

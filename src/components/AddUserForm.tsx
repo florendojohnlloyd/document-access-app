@@ -72,8 +72,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             placeholder="e.g. juan.delacruz"
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
-              'border-gray-300 dark:border-gray-600',
+              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
+              'border-slate-700 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           />
@@ -96,8 +96,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             placeholder="Min. 6 characters"
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
-              'border-gray-300 dark:border-gray-600',
+              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
+              'border-slate-700 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           />
@@ -116,8 +116,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             onChange={(e) => setRole(e.target.value as Role)}
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
-              'border-gray-300 dark:border-gray-600',
+              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
+              'border-slate-700 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           >
@@ -167,4 +167,5 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
     </form>
   );
 }
+
 

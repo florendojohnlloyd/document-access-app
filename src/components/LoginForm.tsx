@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function LoginForm() {
@@ -37,28 +37,14 @@ export function LoginForm() {
     }
   };
 
-  const inputClass = cn(
-    'w-full px-4 py-3 rounded-xl text-sm border transition-all duration-200',
-    'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white',
-    'border-slate-200 dark:border-slate-700',
-    'placeholder-slate-400',
-    'focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500',
-    'disabled:opacity-50'
-  );
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Username */}
       <div className="space-y-1.5">
-        <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor="username" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
           Username
         </label>
         <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </span>
           <input
             id="username"
             type="text"
@@ -66,8 +52,14 @@ export function LoginForm() {
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className={cn(inputClass, 'pl-10')}
-            placeholder="Enter your username"
+            className={cn(
+              'w-full px-4 py-3 rounded-xl text-sm',
+              'bg-slate-900 border border-slate-800 text-white',
+              'placeholder-slate-600',
+              'focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/50',
+              'transition-all duration-200 disabled:opacity-50'
+            )}
+            placeholder="Enter username"
             disabled={loading}
           />
         </div>
@@ -75,15 +67,10 @@ export function LoginForm() {
 
       {/* Password */}
       <div className="space-y-1.5">
-        <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor="password" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
           Password
         </label>
         <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </span>
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
@@ -91,15 +78,20 @@ export function LoginForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={cn(inputClass, 'pl-10 pr-12')}
-            placeholder="Enter your password"
+            className={cn(
+              'w-full px-4 py-3 pr-12 rounded-xl text-sm',
+              'bg-slate-900 border border-slate-800 text-white',
+              'placeholder-slate-600',
+              'focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/50',
+              'transition-all duration-200 disabled:opacity-50'
+            )}
+            placeholder="Enter password"
             disabled={loading}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300 transition-colors"
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -108,26 +100,28 @@ export function LoginForm() {
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl px-4 py-3">
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
           <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+          <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
+
+      {/* Divider */}
+      <div className="h-px bg-slate-800 my-2" />
 
       {/* Submit */}
       <button
         type="submit"
         disabled={loading || !username || !password}
         className={cn(
-          'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl',
-          'bg-gradient-to-r from-indigo-600 to-violet-600',
-          'hover:from-indigo-500 hover:to-violet-500',
+          'w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl',
+          'bg-blue-600 hover:bg-blue-600/100',
           'text-white font-semibold text-sm',
-          'shadow-lg shadow-indigo-500/25',
-          'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+          'shadow-lg shadow-blue-600/20',
+          'focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-slate-950',
           'transition-all duration-200',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
-          'mt-2'
+          'disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none',
+          'group'
         )}
       >
         {loading ? (
@@ -140,11 +134,12 @@ export function LoginForm() {
           </>
         ) : (
           <>
-            <LogIn className="w-4 h-4" />
-            Login
+            Sign In
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </>
         )}
       </button>
     </form>
   );
 }
+

@@ -14,16 +14,15 @@ interface DashboardShellProps {
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard/files': 'Files',
-  '/dashboard/users': 'Users',
+  '/dashboard/users': 'User Management',
   '/dashboard/logs': 'Audit Logs',
 };
 
 export function DashboardShell({ profile: initialProfile, children }: DashboardShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);       // mobile overlay
-  const [collapsed, setCollapsed] = useState(false);           // desktop collapse
+  // sidebarOpen controls both mobile overlay + desktop visibility
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profile, setProfile] = useState(initialProfile);
   const pathname = usePathname();
-
   const title = PAGE_TITLES[pathname] ?? 'Dashboard';
   const needsName = profile.role === 'user' && !profile.name_locked && !profile.full_name;
 
@@ -33,14 +32,12 @@ export function DashboardShell({ profile: initialProfile, children }: DashboardS
         profile={profile}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed(!collapsed)}
       />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header
           profile={profile}
-          onMenuClick={() => setSidebarOpen(true)}
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           title={title}
         />
         <main className="flex-1 overflow-y-auto bg-slate-950 p-4 md:p-6">
@@ -48,9 +45,7 @@ export function DashboardShell({ profile: initialProfile, children }: DashboardS
         </main>
       </div>
 
-      {needsName && (
-        <SetNameModal onSaved={(p) => setProfile(p)} />
-      )}
+      {needsName && <SetNameModal onSaved={(p) => setProfile(p)} />}
     </div>
   );
 }

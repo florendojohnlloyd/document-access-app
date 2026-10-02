@@ -27,7 +27,7 @@ const ACTION_STYLES: Record<ActionType, { label: string; className: string }> = 
   },
   FILE_RENAME: {
     label: 'File Renamed',
-    className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+    className: 'bg-amber-500/15 dark:bg-yellow-900/30 text-amber-300 dark:text-yellow-300',
   },
   FOLDER_CREATE: {
     label: 'Folder Created',
@@ -126,5 +126,6 @@ export function LogTable({ logs }: LogTableProps) {
     </div>
   );
 }
+
 
 

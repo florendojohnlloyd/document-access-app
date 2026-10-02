@@ -1,95 +1,91 @@
 import { LoginForm } from '@/components/LoginForm';
-import { FileCheck2, ShieldCheck, Users } from 'lucide-react';
+import { BarChart3, FileCheck, TrendingUp, Shield } from 'lucide-react';
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex flex-col md:flex-row">
-      {/* Left panel — gradient */}
-      <div className="relative hidden md:flex md:w-1/2 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-12 flex-col justify-between overflow-hidden">
-        {/* Decorative shapes */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/5" />
-          <div className="absolute top-1/3 -right-20 w-64 h-64 rounded-full bg-white/5" />
-          <div className="absolute -bottom-20 left-1/4 w-96 h-96 rounded-full bg-white/5" />
-          {/* Floating pills */}
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-white/10"
-              style={{
-                width: `${40 + i * 20}px`,
-                height: `${14 + i * 4}px`,
-                top: `${15 + i * 13}%`,
-                left: `${5 + i * 10}%`,
-                transform: `rotate(${-30 + i * 10}deg)`,
-              }}
-            />
-          ))}
-        </div>
+    <main className="min-h-screen flex flex-col md:flex-row bg-slate-950">
+      {/* Left panel */}
+      <div className="relative hidden md:flex md:w-1/2 flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950">
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-10"
+          style={{backgroundImage:'linear-gradient(rgba(99,102,241,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.3) 1px,transparent 1px)',backgroundSize:'40px 40px'}} />
+
+        {/* Glow */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Logo */}
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <FileCheck2 className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
+              <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <span className="text-white font-bold text-xl tracking-tight">DocuVault</span>
+            <div>
+              <p className="text-white font-bold text-lg tracking-tight">DocuVault</p>
+              <p className="text-blue-400/70 text-xs">Document Management System</p>
+            </div>
           </div>
         </div>
 
-        {/* Center text */}
-        <div className="relative z-10">
-          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
-            Secure Document<br />Management System
-          </h1>
-          <p className="text-white/70 text-base leading-relaxed mb-8">
-            Store, organize, and manage your organization's documents securely in one place.
-          </p>
+        {/* Hero text */}
+        <div className="relative z-10 space-y-6">
+          <div>
+            <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest mb-3">Enterprise Solution</p>
+            <h1 className="text-4xl font-bold text-white leading-tight">
+              Manage Your<br />
+              <span className="text-blue-400">Documents</span><br />
+              Efficiently
+            </h1>
+            <p className="text-slate-400 mt-4 text-sm leading-relaxed max-w-xs">
+              Centralize your organization's documents with role-based access, audit trails, and secure file storage.
+            </p>
+          </div>
 
-          {/* Feature bullets */}
-          <div className="space-y-3">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4">
             {[
-              { icon: ShieldCheck, text: 'Role-based access control' },
-              { icon: FileCheck2, text: 'Secure file storage & preview' },
-              { icon: Users, text: 'Team collaboration & audit logs' },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-white/80 text-sm">{text}</span>
+              { icon: FileCheck, label: 'Documents', value: 'Secured' },
+              { icon: TrendingUp, label: 'Access', value: 'Tracked' },
+              { icon: Shield, label: 'Roles', value: 'Managed' },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="bg-slate-900/5 border border-white/10 rounded-xl p-3 text-center">
+                <Icon className="w-4 h-4 text-blue-400 mx-auto mb-1" />
+                <p className="text-white text-xs font-bold">{value}</p>
+                <p className="text-slate-500 text-xs">{label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="relative z-10 text-white/40 text-xs">
+        <p className="relative z-10 text-slate-600 text-xs">
           &copy; {new Date().getFullYear()} DocuVault. All rights reserved.
         </p>
       </div>
 
       {/* Right panel — form */}
-      <div className="flex-1 flex items-center justify-center bg-white dark:bg-slate-950 p-8 md:p-12">
+      <div className="flex-1 flex items-center justify-center bg-slate-950 p-8">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-8 md:hidden">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-              <FileCheck2 className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-3 mb-10 md:hidden">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
+              <BarChart3 className="w-4 h-4 text-white" />
             </div>
-            <span className="text-slate-900 dark:text-white font-bold text-lg">DocuVault</span>
+            <span className="text-white font-bold text-lg">DocuVault</span>
           </div>
 
+          {/* Form header */}
           <div className="mb-8">
-            <p className="text-indigo-600 dark:text-indigo-400 text-xs font-semibold uppercase tracking-widest mb-2">
-              USER LOGIN
-            </p>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome back</h2>
-            <p className="text-slate-500 text-sm mt-1">Sign in to access your documents</p>
+            <div className="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-600/20 rounded-full px-3 py-1 mb-4">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              <span className="text-blue-400 text-xs font-medium">Secure Portal</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white">Sign In</h2>
+            <p className="text-slate-500 text-sm mt-1">Enter your credentials to access the system</p>
           </div>
 
           <LoginForm />
 
-          <p className="text-center text-xs text-slate-400 mt-8 md:hidden">
+          <p className="text-center text-xs text-slate-700 mt-8 md:hidden">
             &copy; {new Date().getFullYear()} DocuVault
           </p>
         </div>
@@ -97,3 +93,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

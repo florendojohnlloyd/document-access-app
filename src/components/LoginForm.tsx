@@ -28,7 +28,8 @@ export function LoginForm() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        setError('Invalid username or password. Please try again.');
+        setError(data.error ?? 'Invalid username or password. Please try again.');
+        console.error('[LoginForm] error:', data.error);
       } else {
         router.push('/dashboard/files');
         router.refresh();

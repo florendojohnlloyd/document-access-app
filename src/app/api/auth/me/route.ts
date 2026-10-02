@@ -4,24 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET() {
   try {
     const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
+      .from('profiles').select('*').eq('id', session.user.id).single();
 
-    if (error || !profile) {
-      return NextResponse.json({ error: 'Profile not found.' }, { status: 404 });
-    }
-
+    if (error || !profile) return NextResponse.json({ error: 'Profile not found.' }, { status: 404 });
     return NextResponse.json(profile);
   } catch {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });
@@ -31,13 +20,8 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json() as { full_name?: string };
     const { full_name } = body;
@@ -46,39 +30,34 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
     }
 
-    // Get current profile
     const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
+      .from('profiles').select('*').eq('id', session.user.id).single();
 
-    if (!currentProfile) {
-      return NextResponse.json({ error: 'Profile not found.' }, { status: 404 });
-    }
+    if (!currentProfile) return NextResponse.json({ error: 'Profile not found.' }, { status: 404 });
 
-    // Regular users cannot change name once locked
+    // Users cannot change name once locked; managers can always edit
     if (currentProfile.role === 'user' && currentProfile.name_locked) {
-      return NextResponse.json({ error: 'Ang pangalan ay naka-lock na at hindi na mababago.' }, { status: 403 });
+      return NextResponse.json({ error: 'Your name is locked and cannot be changed.' }, { status: 403 });
     }
 
     const { data: updated, error } = await supabase
       .from('profiles')
-      .update({ full_name: full_name.trim(), name_locked: true })
+      .update({
+        full_name: full_name.trim(),
+        // Lock name for users only; managers keep theirs editable
+        name_locked: currentProfile.role === 'user' ? true : currentProfile.name_locked,
+      })
       .eq('id', session.user.id)
       .select()
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Log the action
     await supabase.from('audit_logs').insert({
       actor_id: session.user.id,
       actor_name: currentProfile.username,
-      action: 'NAME_SET',
-      detail: `User ${currentProfile.username} set full name to "${full_name.trim()}".`,
+      action: 'PROFILE_UPDATE',
+      detail: `${currentProfile.username} updated full name to "${full_name.trim()}".`,
     });
 
     return NextResponse.json(updated);

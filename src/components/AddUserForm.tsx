@@ -23,7 +23,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
     setSuccess('');
 
     if (password.length < 6) {
-      setError('Ang password ay dapat hindi bababa sa 6 na karakter.');
+      setError('Password must be at least 6 characters.');
       return;
     }
 
@@ -32,7 +32,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role }),
+        body: JSON.stringify({ username: username.trim().toLowerCase(), password, role }),
       });
 
       const data = await res.json() as Profile | { error: string };
@@ -40,27 +40,31 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
       if (!res.ok || 'error' in data) {
         setError(('error' in data ? data.error : null) ?? 'Error creating user.');
       } else {
-        setSuccess(`User "${username}" na-create na!`);
+        setSuccess(`User "${username}" created successfully! They can now log in.`);
         onCreated(data as Profile);
         setUsername('');
         setPassword('');
         setRole('user');
       }
     } catch {
-      setError('Network error.');
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClass = cn(
+    'w-full px-3 py-2.5 rounded-lg border text-sm',
+    'bg-white text-slate-900 border-slate-200',
+    'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+    'transition-colors'
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label
-            htmlFor="new-username"
-            className="block text-sm font-medium text-slate-600  mb-1.5"
-          >
+          <label htmlFor="new-username" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
             Username
           </label>
           <input
@@ -69,21 +73,14 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. juan.delacruz"
-            className={cn(
-              'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-slate-50  text-slate-900 dark:text-gray-100',
-              'border-slate-200 dark:border-gray-600',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
-            )}
+            placeholder="e.g. john.doe"
+            className={inputClass}
           />
+          <p className="text-xs text-slate-400 mt-1">Lowercase only, no spaces</p>
         </div>
 
         <div>
-          <label
-            htmlFor="new-password"
-            className="block text-sm font-medium text-slate-600  mb-1.5"
-          >
+          <label htmlFor="new-password" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
             Password
           </label>
           <input
@@ -94,48 +91,37 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Min. 6 characters"
-            className={cn(
-              'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-slate-50  text-slate-900 dark:text-gray-100',
-              'border-slate-200 dark:border-gray-600',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
-            )}
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="new-role"
-            className="block text-sm font-medium text-slate-600  mb-1.5"
-          >
+          <label htmlFor="new-role" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
             Role
           </label>
           <select
             id="new-role"
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
-            className={cn(
-              'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-slate-50  text-slate-900 dark:text-gray-100',
-              'border-slate-200 dark:border-gray-600',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
-            )}
+            className={inputClass}
           >
-            <option value="user">User</option>
-            <option value="manager">Manager</option>
+            <option value="user">User (View &amp; Upload)</option>
+            <option value="manager">Manager (Full Access)</option>
           </select>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+          <p className="text-red-600 text-sm">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
-          <p className="text-green-600 dark:text-green-400 text-sm">{success}</p>
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+          <p className="text-green-700 text-sm">{success}</p>
         </div>
       )}
 
@@ -143,10 +129,10 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         type="submit"
         disabled={loading || !username || !password}
         className={cn(
-          'flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors',
-          'bg-indigo-600 hover:bg-indigo-700 text-white',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
-          'disabled:opacity-60 disabled:cursor-not-allowed'
+          'flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors',
+          'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+          'disabled:opacity-50 disabled:cursor-not-allowed shadow-sm'
         )}
       >
         {loading ? (
@@ -167,5 +153,3 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
     </form>
   );
 }
-
-

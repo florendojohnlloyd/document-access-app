@@ -109,7 +109,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
             ? 'border-indigo-600 bg-indigo-600/5'
             : selectedFile
             ? 'border-indigo-600/50 bg-indigo-600/5 cursor-default'
-            : 'border-slate-200 dark:border-gray-600 hover:border-indigo-600/50 hover:bg-slate-50 /50'
+            : 'border-slate-200 hover:border-blue-400 hover:bg-blue-50'
         )}
         role="button"
         tabIndex={0}
@@ -148,7 +148,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            <Upload className="w-8 h-8 text-slate-500  mx-auto" />
+            <Upload className="w-8 h-8 text-blue-500 mx-auto" />
             <p className="text-sm text-slate-500 ">
               <span className="font-medium text-indigo-500 hover:text-indigo-400">Click to browse</span>
               {' '}or drag and drop your file here

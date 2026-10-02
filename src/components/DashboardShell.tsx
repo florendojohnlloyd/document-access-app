@@ -43,6 +43,7 @@ export function DashboardShell({ profile: initialProfile, children }: { profile:
           profile={profile}
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen(v => !v)}
+          onProfileUpdated={setProfile}
           title={title}
         />
         <main className="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-6">

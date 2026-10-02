@@ -59,7 +59,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         <div>
           <label
             htmlFor="new-username"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
           >
             Username
           </label>
@@ -72,9 +72,9 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             placeholder="e.g. juan.delacruz"
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
+              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
               'border-gray-300 dark:border-gray-600',
-              'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:border-transparent'
+              'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           />
         </div>
@@ -82,7 +82,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         <div>
           <label
             htmlFor="new-password"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
           >
             Password
           </label>
@@ -96,9 +96,9 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             placeholder="Min. 6 characters"
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
+              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
               'border-gray-300 dark:border-gray-600',
-              'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:border-transparent'
+              'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           />
         </div>
@@ -106,7 +106,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         <div>
           <label
             htmlFor="new-role"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
           >
             Role
           </label>
@@ -116,9 +116,9 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             onChange={(e) => setRole(e.target.value as Role)}
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
+              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
               'border-gray-300 dark:border-gray-600',
-              'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:border-transparent'
+              'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           >
             <option value="user">User</option>
@@ -144,8 +144,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         disabled={loading || !username || !password}
         className={cn(
           'flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors',
-          'bg-teal-primary hover:bg-teal-dark text-white',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary',
+          'bg-indigo-600 hover:bg-indigo-700 text-white',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
           'disabled:opacity-60 disabled:cursor-not-allowed'
         )}
       >
@@ -167,3 +167,4 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
     </form>
   );
 }
+

@@ -104,12 +104,12 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
         onClick={() => !selectedFile && inputRef.current?.click()}
         className={cn(
           'relative border-2 border-dashed rounded-xl p-6 text-center transition-colors',
-          'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary',
+          'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
           dragging
-            ? 'border-teal-primary bg-teal-primary/5'
+            ? 'border-indigo-600 bg-indigo-600/5'
             : selectedFile
-            ? 'border-teal-primary/50 bg-teal-primary/5 cursor-default'
-            : 'border-gray-300 dark:border-gray-600 hover:border-teal-primary/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+            ? 'border-indigo-600/50 bg-indigo-600/5 cursor-default'
+            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-600/50 hover:bg-slate-50 dark:hover:bg-slate-700/50'
         )}
         role="button"
         tabIndex={0}
@@ -130,17 +130,17 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
         {selectedFile ? (
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
-              <CloudUpload className="w-5 h-5 text-teal-primary flex-shrink-0" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+              <CloudUpload className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                 {selectedFile.name}
               </span>
-              <span className="text-xs text-gray-400 flex-shrink-0">
+              <span className="text-xs text-slate-400 flex-shrink-0">
                 ({(selectedFile.size / 1024).toFixed(1)} KB)
               </span>
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); reset(); }}
-              className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+              className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
               aria-label="Remove selected file"
             >
               <X className="w-4 h-4" />
@@ -148,12 +148,12 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            <Upload className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              <span className="font-medium text-teal-primary hover:text-teal-dark">Pumili ng file</span>
+            <Upload className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              <span className="font-medium text-indigo-600 hover:text-indigo-700">Pumili ng file</span>
               {' '}o i-drag dito
             </p>
-            <p className="text-xs text-gray-400">PDF, PNG, JPG, DOC, DOCX, XLS, XLSX</p>
+            <p className="text-xs text-slate-400">PDF, PNG, JPG, DOC, DOCX, XLS, XLSX</p>
           </div>
         )}
       </div>
@@ -166,9 +166,9 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
             onChange={(e) => setSelectedFolderId(e.target.value)}
             className={cn(
               'flex-1 px-3 py-2 rounded-lg border text-sm',
-              'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
+              'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
               'border-gray-300 dark:border-gray-600',
-              'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:border-transparent'
+              'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
             aria-label="Select folder"
           >
@@ -183,8 +183,8 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
             disabled={uploading}
             className={cn(
               'flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-colors',
-              'bg-teal-primary hover:bg-teal-dark text-white',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary',
+              'bg-indigo-600 hover:bg-indigo-700 text-white',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
               'disabled:opacity-60 disabled:cursor-not-allowed'
             )}
           >
@@ -208,9 +208,9 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
 
       {/* Progress bar */}
       {uploading && progress > 0 && (
-        <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-teal-primary rounded-full transition-all duration-200"
+            className="h-full bg-indigo-600 rounded-full transition-all duration-200"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -221,8 +221,9 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
       )}
 
       {success && (
-        <p className="text-teal-primary dark:text-teal-light text-sm font-medium">{success}</p>
+        <p className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">{success}</p>
       )}
     </div>
   );
 }
+

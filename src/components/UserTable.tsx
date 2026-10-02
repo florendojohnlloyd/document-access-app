@@ -36,8 +36,8 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <User className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-2" />
-        <p className="text-gray-500 dark:text-gray-400">Walang users na natagpuan.</p>
+        <User className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
+        <p className="text-slate-500 dark:text-slate-400">No users found.</p>
       </div>
     );
   }
@@ -47,16 +47,16 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Username</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+            <tr className="border-b border-slate-200 dark:border-slate-700">
+              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Username</th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden sm:table-cell">
                 Full Name
               </th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Role</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">
+              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Role</th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden md:table-cell">
                 Created At
               </th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Actions</th>
+              <th className="text-right py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -64,26 +64,26 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
               <tr
                 key={user.id}
                 className={cn(
-                  'hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors',
-                  user.id === currentUserId && 'bg-teal-primary/5 dark:bg-teal-primary/10'
+                  'hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors',
+                  user.id === currentUserId && 'bg-indigo-600/5 dark:bg-indigo-600/10'
                 )}
               >
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-teal-primary/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium text-teal-primary">
+                    <div className="w-7 h-7 rounded-full bg-indigo-600/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium text-indigo-600">
                         {user.username.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="font-medium text-gray-800 dark:text-gray-200">{user.username}</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{user.username}</span>
                     {user.id === currentUserId && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">(ikaw)</span>
+                      <span className="text-xs text-slate-400">(you)</span>
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-4 hidden sm:table-cell text-gray-600 dark:text-gray-400">
+                <td className="py-3 px-4 hidden sm:table-cell text-slate-600 dark:text-slate-400">
                   {user.full_name ?? (
-                    <span className="text-gray-400 dark:text-gray-500 italic text-xs">Hindi pa naset</span>
+                    <span className="text-slate-400 italic text-xs">Not set</span>
                   )}
                 </td>
                 <td className="py-3 px-4">
@@ -103,7 +103,7 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
                     {user.role === 'manager' ? 'Manager' : 'User'}
                   </span>
                 </td>
-                <td className="py-3 px-4 hidden md:table-cell text-gray-500 dark:text-gray-400 text-xs">
+                <td className="py-3 px-4 hidden md:table-cell text-slate-500 dark:text-slate-400 text-xs">
                   {formatDate(user.created_at)}
                 </td>
                 <td className="py-3 px-4">
@@ -113,7 +113,7 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
                         onClick={() => { setTarget(user); setError(''); }}
                         className={cn(
                           'p-1.5 rounded-lg transition-colors',
-                          'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20',
+                          'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
                         )}
                         aria-label={`Delete ${user.username}`}
@@ -132,7 +132,7 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
       {target && (
         <Modal
           title="Delete User"
-          message={`Sigurado ka bang gusto mong burahin ang user na "${target.username}"? Hindi ito mababawi at mabubura ang lahat ng kanyang data.`}
+          message={`Are you sure you want to delete user "${target.username}"? This cannot be undone.`}
           confirmLabel="Delete"
           danger
           onConfirm={handleDelete}
@@ -151,3 +151,4 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
     </>
   );
 }
+

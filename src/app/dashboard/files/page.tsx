@@ -60,8 +60,8 @@ export default function FilesPage() {
   return (
     <div className="space-y-5">
       {/* Upload zone */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">
           Upload File
         </h2>
         <UploadZone
@@ -71,7 +71,7 @@ export default function FilesPage() {
       </div>
 
       {/* Folder chips */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
         <div className="mb-4">
           <FolderChips
             folders={folders}
@@ -88,7 +88,7 @@ export default function FilesPage() {
 
         {/* File count */}
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             {loadingFiles ? 'Loading...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
           </p>
         </div>
@@ -107,3 +107,4 @@ export default function FilesPage() {
     </div>
   );
 }
+

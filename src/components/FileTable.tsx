@@ -95,9 +95,9 @@ export function FileTable({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
-        <p className="text-gray-500 dark:text-gray-400 font-medium">Walang files</p>
-        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-          Mag-upload ng file para magsimula.
+        <p className="text-slate-500 dark:text-slate-400 font-medium">No files found</p>
+        <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
+          Upload a file to get started.
         </p>
       </div>
     );
@@ -140,7 +140,7 @@ export function FileTable({
                         setViewFileId(file.id);
                         setViewFileName(file.name);
                       }}
-                      className="text-gray-800 dark:text-gray-200 hover:text-teal-primary dark:hover:text-teal-light hover:underline font-medium transition-colors text-left"
+                      className="text-indigo-600 hover:underline font-medium transition-colors text-left"
                     >
                       {file.name}
                     </button>
@@ -235,7 +235,7 @@ export function FileTable({
       {modalMode === 'delete' && targetFile && (
         <Modal
           title="Delete File"
-          message={`Sigurado ka bang gusto mong burahin ang "${targetFile.name}"? Hindi ito mababawi.`}
+          message={`Are you sure you want to delete "${targetFile.name}"? This action cannot be undone.`}
           confirmLabel="Delete"
           danger
           onConfirm={handleDelete}

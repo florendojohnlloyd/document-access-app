@@ -70,11 +70,11 @@ export function Modal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md outline-none"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <h2
             id="modal-title"
             className="text-base font-semibold text-gray-900 dark:text-gray-100"
@@ -83,7 +83,7 @@ export function Modal({
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -93,12 +93,12 @@ export function Modal({
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
           {message && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">{message}</p>
           )}
 
           {inputLabel && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 {inputLabel}
               </label>
               <input
@@ -107,9 +107,9 @@ export function Modal({
                 defaultValue={defaultValue}
                 className={cn(
                   'w-full px-4 py-2.5 rounded-lg border text-sm',
-                  'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
+                  'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
                   'border-gray-300 dark:border-gray-600',
-                  'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:border-transparent'
+                  'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
                 )}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleConfirm();
@@ -120,14 +120,14 @@ export function Modal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700">
           <button
             onClick={onClose}
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-              'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+              'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
               'hover:bg-gray-200 dark:hover:bg-gray-600',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary'
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600'
             )}
           >
             {cancelLabel}
@@ -139,7 +139,7 @@ export function Modal({
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
               danger
                 ? 'bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600'
-                : 'bg-teal-primary hover:bg-teal-dark text-white focus-visible:ring-teal-primary'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white focus-visible:ring-indigo-600'
             )}
           >
             {confirmLabel}
@@ -149,3 +149,4 @@ export function Modal({
     </div>
   );
 }
+

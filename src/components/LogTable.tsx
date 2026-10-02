@@ -15,7 +15,7 @@ const ACTION_STYLES: Record<ActionType, { label: string; className: string }> = 
   },
   LOGOUT: {
     label: 'Logout',
-    className: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+    className: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
   },
   UPLOAD: {
     label: 'Upload',
@@ -51,18 +51,18 @@ const ACTION_STYLES: Record<ActionType, { label: string; className: string }> = 
   },
   NAME_SET: {
     label: 'Name Set',
-    className: 'bg-teal-primary/10 text-teal-primary dark:text-teal-light',
+    className: 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400',
   },
   VIEW: {
     label: 'View',
-    className: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+    className: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
   },
 };
 
 function ActionBadge({ action }: { action: ActionType }) {
   const style = ACTION_STYLES[action] ?? {
     label: action,
-    className: 'bg-gray-100 dark:bg-gray-700 text-gray-600',
+    className: 'bg-slate-100 dark:bg-slate-700 text-slate-600',
   };
 
   return (
@@ -76,8 +76,8 @@ export function LogTable({ logs }: LogTableProps) {
   if (logs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <ClipboardList className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-2" />
-        <p className="text-gray-500 dark:text-gray-400">Walang logs pa.</p>
+        <ClipboardList className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
+        <p className="text-slate-500 dark:text-slate-400">Walang logs pa.</p>
       </div>
     );
   }
@@ -86,13 +86,13 @@ export function LogTable({ logs }: LogTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Timestamp</th>
-            <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+          <tr className="border-b border-slate-200 dark:border-slate-700">
+            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Timestamp</th>
+            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden sm:table-cell">
               Actor
             </th>
-            <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Action</th>
-            <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">
+            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Action</th>
+            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden md:table-cell">
               Detail
             </th>
           </tr>
@@ -101,14 +101,14 @@ export function LogTable({ logs }: LogTableProps) {
           {logs.map((log) => (
             <tr
               key={log.id}
-              className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+              className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
             >
-              <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                 {formatDate(log.created_at)}
               </td>
               <td className="py-3 px-4 hidden sm:table-cell">
                 <div>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
                     {log.actor_name ?? '—'}
                   </span>
                 </div>
@@ -116,7 +116,7 @@ export function LogTable({ logs }: LogTableProps) {
               <td className="py-3 px-4">
                 <ActionBadge action={log.action} />
               </td>
-              <td className="py-3 px-4 hidden md:table-cell text-gray-500 dark:text-gray-400 text-xs">
+              <td className="py-3 px-4 hidden md:table-cell text-slate-500 dark:text-slate-400 text-xs">
                 {log.detail ?? '—'}
               </td>
             </tr>
@@ -126,3 +126,4 @@ export function LogTable({ logs }: LogTableProps) {
     </div>
   );
 }
+

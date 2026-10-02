@@ -47,24 +47,24 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-700">
-              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Username</th>
-              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden sm:table-cell">
+            <tr className="border-b border-slate-800">
+              <th className="text-left py-3 px-4 font-medium text-slate-500">Username</th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">
                 Full Name
               </th>
-              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Role</th>
-              <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden md:table-cell">
+              <th className="text-left py-3 px-4 font-medium text-slate-500">Role</th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">
                 Created At
               </th>
-              <th className="text-right py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Actions</th>
+              <th className="text-right py-3 px-4 font-medium text-slate-500">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+          <tbody className="divide-y divide-slate-800">
             {users.map((user) => (
               <tr
                 key={user.id}
                 className={cn(
-                  'hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors',
+                  'hover:bg-slate-800/60 transition-colors',
                   user.id === currentUserId && 'bg-indigo-600/5 dark:bg-indigo-600/10'
                 )}
               >
@@ -141,8 +141,8 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
       )}
 
       {error && (
-        <div className="fixed bottom-4 right-4 z-50 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 shadow-lg">
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+        <div className="fixed bottom-4 right-4 z-50 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 shadow-lg">
+          <p className="text-red-400 text-sm">{error}</p>
           <button onClick={() => setError('')} className="text-xs text-red-400 underline mt-1">
             Dismiss
           </button>
@@ -151,4 +151,5 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
     </>
   );
 }
+
 

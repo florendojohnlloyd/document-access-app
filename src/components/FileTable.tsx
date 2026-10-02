@@ -85,7 +85,7 @@ export function FileTable({
     return (
       <div className="space-y-2">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="animate-pulse bg-gray-100 dark:bg-gray-700 rounded-lg h-12" />
+          <div key={i} className="animate-pulse bg-slate-800 rounded-lg h-12" />
         ))}
       </div>
     );
@@ -108,29 +108,29 @@ export function FileTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-slate-800">
+              <th className="text-left py-3 px-4 font-medium text-slate-500">
                 Name
               </th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">
                 Folder
               </th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">
                 Uploaded By
               </th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden lg:table-cell">
                 Date
               </th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+              <th className="text-right py-3 px-4 font-medium text-slate-500">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+          <tbody className="divide-y divide-slate-800">
             {files.map((file) => (
               <tr
                 key={file.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group"
+                className="hover:bg-slate-800/60 transition-colors group"
               >
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2.5">
@@ -148,19 +148,19 @@ export function FileTable({
                 </td>
                 <td className="py-3 px-4 hidden sm:table-cell">
                   {file.folder ? (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 text-xs font-medium">
                       {file.folder.name}
                     </span>
                   ) : (
                     <span className="text-gray-400 dark:text-gray-500 text-xs italic">—</span>
                   )}
                 </td>
-                <td className="py-3 px-4 hidden md:table-cell text-gray-600 dark:text-gray-400">
+                <td className="py-3 px-4 hidden md:table-cell text-slate-400">
                   {file.uploader
                     ? file.uploader.full_name ?? file.uploader.username
                     : <span className="text-gray-400 italic">—</span>}
                 </td>
-                <td className="py-3 px-4 hidden lg:table-cell text-gray-500 dark:text-gray-400 text-xs">
+                <td className="py-3 px-4 hidden lg:table-cell text-slate-500 text-xs">
                   {formatDate(file.created_at)}
                 </td>
                 <td className="py-3 px-4">
@@ -252,8 +252,8 @@ export function FileTable({
       )}
 
       {error && (
-        <div className="fixed bottom-4 right-4 z-50 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 shadow-lg">
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+        <div className="fixed bottom-4 right-4 z-50 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 shadow-lg">
+          <p className="text-red-400 text-sm">{error}</p>
           <button onClick={() => setError('')} className="text-xs text-red-400 underline mt-1">
             Dismiss
           </button>
@@ -262,3 +262,4 @@ export function FileTable({
     </>
   );
 }
+

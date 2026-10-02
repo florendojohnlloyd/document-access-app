@@ -15,7 +15,7 @@ const ACTION_STYLES: Record<ActionType, { label: string; className: string }> = 
   },
   LOGOUT: {
     label: 'Logout',
-    className: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
+    className: 'bg-slate-800 text-slate-600 dark:text-slate-400',
   },
   UPLOAD: {
     label: 'Upload',
@@ -55,14 +55,14 @@ const ACTION_STYLES: Record<ActionType, { label: string; className: string }> = 
   },
   VIEW: {
     label: 'View',
-    className: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
+    className: 'bg-slate-800 text-slate-600 dark:text-slate-400',
   },
 };
 
 function ActionBadge({ action }: { action: ActionType }) {
   const style = ACTION_STYLES[action] ?? {
     label: action,
-    className: 'bg-slate-100 dark:bg-slate-700 text-slate-600',
+    className: 'bg-slate-800 text-slate-600',
   };
 
   return (
@@ -86,22 +86,22 @@ export function LogTable({ logs }: LogTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-700">
-            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Timestamp</th>
-            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden sm:table-cell">
+          <tr className="border-b border-slate-800">
+            <th className="text-left py-3 px-4 font-medium text-slate-500">Timestamp</th>
+            <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">
               Actor
             </th>
-            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400">Action</th>
-            <th className="text-left py-3 px-4 font-medium text-slate-500 dark:text-slate-400 hidden md:table-cell">
+            <th className="text-left py-3 px-4 font-medium text-slate-500">Action</th>
+            <th className="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">
               Detail
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+        <tbody className="divide-y divide-slate-800">
           {logs.map((log) => (
             <tr
               key={log.id}
-              className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
+              className="hover:bg-slate-800/60 transition-colors"
             >
               <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                 {formatDate(log.created_at)}
@@ -126,4 +126,5 @@ export function LogTable({ logs }: LogTableProps) {
     </div>
   );
 }
+
 

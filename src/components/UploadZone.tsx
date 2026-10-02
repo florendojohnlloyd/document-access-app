@@ -72,7 +72,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
     xhr.addEventListener('load', () => {
       setUploading(false);
       if (xhr.status >= 200 && xhr.status < 300) {
-        setSuccess(`"${selectedFile.name}" na-upload na!`);
+        setSuccess(`"${selectedFile.name}" uploaded successfully!`);
         reset();
         onUploaded();
       } else {
@@ -150,8 +150,8 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
           <div className="space-y-2">
             <Upload className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              <span className="font-medium text-indigo-600 hover:text-indigo-700">Pumili ng file</span>
-              {' '}o i-drag dito
+              <span className="font-medium text-indigo-500 hover:text-indigo-400">Click to browse</span>
+              {' '}or drag and drop your file here
             </p>
             <p className="text-xs text-slate-400">PDF, PNG, JPG, DOC, DOCX, XLS, XLSX</p>
           </div>

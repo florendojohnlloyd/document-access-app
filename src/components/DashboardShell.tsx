@@ -19,20 +19,22 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export function DashboardShell({ profile: initialProfile, children }: DashboardShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);       // mobile overlay
+  const [collapsed, setCollapsed] = useState(false);           // desktop collapse
   const [profile, setProfile] = useState(initialProfile);
   const pathname = usePathname();
 
   const title = PAGE_TITLES[pathname] ?? 'Dashboard';
-  const needsName =
-    profile.role === 'user' && !profile.name_locked && !profile.full_name;
+  const needsName = profile.role === 'user' && !profile.name_locked && !profile.full_name;
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-slate-950">
       <Sidebar
         profile={profile}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed(!collapsed)}
       />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -41,16 +43,13 @@ export function DashboardShell({ profile: initialProfile, children }: DashboardS
           onMenuClick={() => setSidebarOpen(true)}
           title={title}
         />
-
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto bg-slate-950 p-4 md:p-6">
           {children}
         </main>
       </div>
 
       {needsName && (
-        <SetNameModal
-          onSaved={(updatedProfile) => setProfile(updatedProfile)}
-        />
+        <SetNameModal onSaved={(p) => setProfile(p)} />
       )}
     </div>
   );

@@ -3,10 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createClient();
+    const { id } = await params;
+    const supabase = await createClient();
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -18,7 +19,7 @@ export async function GET(
     const { data: file } = await supabase
       .from('files')
       .select('storage_path, name')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!file) {
@@ -32,6 +33,20 @@ export async function GET(
     if (error || !signedUrlData) {
       return NextResponse.json({ error: 'Could not generate signed URL.' }, { status: 500 });
     }
+
+    // Log the VIEW action in the audit trail
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, full_name')
+      .eq('id', session.user.id)
+      .single();
+
+    await supabase.from('audit_logs').insert({
+      actor_id: session.user.id,
+      actor_name: profile?.full_name || profile?.username || session.user.id,
+      action: 'VIEW',
+      detail: `Viewed file: ${file.name}`,
+    });
 
     return NextResponse.json({ url: signedUrlData.signedUrl, name: file.name });
   } catch {

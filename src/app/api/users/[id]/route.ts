@@ -3,10 +3,11 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createClient();
+    const { id } = await params;
+    const supabase = await createClient();
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -24,7 +25,7 @@ export async function DELETE(
     }
 
     // Prevent self-deletion
-    if (params.id === session.user.id) {
+    if (id === session.user.id) {
       return NextResponse.json({ error: 'Hindi mo mabubura ang sarili mong account.' }, { status: 400 });
     }
 
@@ -32,7 +33,7 @@ export async function DELETE(
     const { data: targetProfile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!targetProfile) {
@@ -42,7 +43,7 @@ export async function DELETE(
     const serviceClient = createServiceClient();
 
     // Delete auth user (profile will cascade due to FK)
-    const { error: deleteError } = await serviceClient.auth.admin.deleteUser(params.id);
+    const { error: deleteError } = await serviceClient.auth.admin.deleteUser(id);
     if (deleteError) {
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }

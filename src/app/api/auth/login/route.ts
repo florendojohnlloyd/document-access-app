@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const email = usernameToEmail(username);
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 

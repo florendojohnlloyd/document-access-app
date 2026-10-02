@@ -196,31 +196,31 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 --   Public: NO (private)
 -- Or run:
 -- ============================================================
--- INSERT INTO storage.buckets (id, name, public)
--- VALUES ('documents', 'documents', false)
--- ON CONFLICT DO NOTHING;
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('documents', 'documents', false)
+ON CONFLICT DO NOTHING;
 
--- Storage RLS policies (run separately if needed):
--- CREATE POLICY "Authenticated users can upload"
---   ON storage.objects FOR INSERT
---   TO authenticated
---   WITH CHECK (bucket_id = 'documents');
---
--- CREATE POLICY "Authenticated users can read"
---   ON storage.objects FOR SELECT
---   TO authenticated
---   USING (bucket_id = 'documents');
---
--- CREATE POLICY "Managers can delete"
---   ON storage.objects FOR DELETE
---   TO authenticated
---   USING (
---     bucket_id = 'documents' AND
---     EXISTS (
---       SELECT 1 FROM public.profiles
---       WHERE id = auth.uid() AND role = 'manager'
---     )
---   );
+-- Storage RLS policies for the documents bucket
+CREATE POLICY "Authenticated users can upload"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'documents');
+
+CREATE POLICY "Authenticated users can read"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (bucket_id = 'documents');
+
+CREATE POLICY "Managers can delete"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'documents' AND
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'manager'
+    )
+  );
 
 -- ============================================================
 -- 7. SEED DATA (uncomment to run)

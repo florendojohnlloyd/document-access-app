@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const {
       data: { session },
@@ -29,7 +29,9 @@ export async function POST() {
 
     await supabase.auth.signOut();
 
-    return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://localhost:3000'));
+    // Use request.url as base so the redirect always points back to the app,
+    // never to the Supabase project URL.
+    return NextResponse.redirect(new URL('/login', request.url));
   } catch {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });
   }

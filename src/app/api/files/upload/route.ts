@@ -19,17 +19,13 @@ function getExtension(filename: string): string {
   return filename.split('.').pop()?.toLowerCase() ?? '';
 }
 
-async function getSession() {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return { supabase, session };
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, session } = await getSession();
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const formData = await request.formData();
@@ -48,9 +44,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type) && file.type !== '') {
-      // Be lenient with MIME type — some browsers report incorrect types
-    }
+    // Be lenient with MIME type — some browsers report incorrect types
+    void ALLOWED_MIME_TYPES;
 
     // Get folder name for path
     let folderName = 'uncategorized';

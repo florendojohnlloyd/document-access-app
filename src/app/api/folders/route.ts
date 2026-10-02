@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function getSession() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   return { supabase, session };
 }
 
-async function getProfile(supabase: ReturnType<typeof createClient>, userId: string) {
+async function getProfile(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
   return data;
 }

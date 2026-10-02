@@ -55,7 +55,7 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
     >
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         {/* Header */}
-        <div className="bg-teal-primary px-6 py-6 text-center">
+        <div className="bg-gradient-to-br from-indigo-600 to-violet-600 px-6 py-6 text-center">
           <div className="flex justify-center mb-3">
             <div className="bg-white/20 rounded-full p-3">
               <User className="w-7 h-7 text-white" />
@@ -64,7 +64,7 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
           <h2 id="setname-title" className="text-lg font-bold text-white">
             Welcome! Set Your Name
           </h2>
-          <p className="text-teal-light/80 text-sm mt-1">
+          <p className="text-indigo-200/80 text-sm mt-1">
             Please enter your full name to get started.
           </p>
         </div>
@@ -90,7 +90,7 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
                 'w-full px-4 py-2.5 rounded-lg border text-sm',
                 'bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100',
                 'border-gray-300 dark:border-white/10',
-                'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:border-transparent'
+                'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
               )}
             />
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
@@ -109,8 +109,8 @@ export function SetNameModal({ onSaved }: SetNameModalProps) {
             disabled={loading || !fullName.trim()}
             className={cn(
               'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg',
-              'bg-teal-primary hover:bg-teal-dark text-white font-medium text-sm',
-              'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2',
+              'bg-gradient-to-br from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-sm',
+              'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
               'transition-colors disabled:opacity-60 disabled:cursor-not-allowed'
             )}
           >

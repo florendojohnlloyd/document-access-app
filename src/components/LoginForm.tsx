@@ -17,41 +17,41 @@ export function LoginForm() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-
       const data = await res.json();
-
       if (!res.ok || data.error) {
-        setError(data.error ?? 'Invalid username or password. Please try again.');
-        console.error('[LoginForm] error:', data.error);
+        setError(data.error ?? 'Invalid username or password.');
       } else {
         router.push('/dashboard/files');
         router.refresh();
       }
     } catch {
-      setError('Network error. Please check your connection and try again.');
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClass = cn(
+    'w-full py-3 rounded-xl text-sm bg-slate-800 border border-slate-700 text-white placeholder-slate-500',
+    'focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50',
+    'transition-all duration-200 disabled:opacity-50'
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Username */}
       <div className="space-y-1.5">
-        <label htmlFor="username" className="block text-sm font-medium text-slate-300">
+        <label htmlFor="username" className="block text-sm font-medium text-slate-400">
           Username
         </label>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <User className="w-4 h-4 text-slate-500" />
-          </div>
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           <input
             id="username"
             type="text"
@@ -59,14 +59,7 @@ export function LoginForm() {
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className={cn(
-              'w-full pl-10 pr-4 py-3 rounded-xl text-sm',
-              'bg-white/5 border border-white/10 text-white',
-              'placeholder-slate-500',
-              'focus:outline-none focus:ring-2 focus:ring-teal-primary/60 focus:border-teal-primary/60',
-              'transition-all duration-200',
-              'disabled:opacity-50'
-            )}
+            className={cn(inputClass, 'pl-10 pr-4')}
             placeholder="Enter your username"
             disabled={loading}
           />
@@ -75,13 +68,11 @@ export function LoginForm() {
 
       {/* Password */}
       <div className="space-y-1.5">
-        <label htmlFor="password" className="block text-sm font-medium text-slate-300">
+        <label htmlFor="password" className="block text-sm font-medium text-slate-400">
           Password
         </label>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <Lock className="w-4 h-4 text-slate-500" />
-          </div>
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
@@ -89,14 +80,7 @@ export function LoginForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={cn(
-              'w-full pl-10 pr-12 py-3 rounded-xl text-sm',
-              'bg-white/5 border border-white/10 text-white',
-              'placeholder-slate-500',
-              'focus:outline-none focus:ring-2 focus:ring-teal-primary/60 focus:border-teal-primary/60',
-              'transition-all duration-200',
-              'disabled:opacity-50'
-            )}
+            className={cn(inputClass, 'pl-10 pr-12')}
             placeholder="Enter your password"
             disabled={loading}
           />
@@ -113,8 +97,8 @@ export function LoginForm() {
 
       {/* Error */}
       {error && (
-        <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 flex-shrink-0" />
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
@@ -125,9 +109,11 @@ export function LoginForm() {
         disabled={loading || !username || !password}
         className={cn(
           'w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl mt-2',
-          'bg-teal-primary hover:bg-teal-dark text-white font-semibold text-sm',
-          'shadow-lg shadow-teal-primary/25 hover:shadow-teal-primary/40',
-          'focus:outline-none focus:ring-2 focus:ring-teal-primary focus:ring-offset-2 focus:ring-offset-transparent',
+          'bg-gradient-to-r from-indigo-600 to-violet-600',
+          'hover:from-indigo-500 hover:to-violet-500',
+          'text-white font-semibold text-sm',
+          'shadow-lg shadow-indigo-500/20',
+          'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900',
           'transition-all duration-200',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none'
         )}

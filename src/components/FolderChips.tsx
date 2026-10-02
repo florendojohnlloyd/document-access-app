@@ -100,9 +100,9 @@ export function FolderChips({
         onClick={() => onSelect(null)}
         className={cn(
           'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
           selectedId === null
-            ? 'bg-teal-primary text-white shadow-sm'
+            ? 'bg-indigo-600 text-white shadow-sm'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
         )}
       >
@@ -117,9 +117,9 @@ export function FolderChips({
             onClick={() => onSelect(folder.id)}
             className={cn(
               'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
               selectedId === folder.id
-                ? 'bg-teal-primary text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-sm'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             )}
           >
@@ -135,7 +135,7 @@ export function FolderChips({
                   setError('');
                   setModalMode('rename');
                 }}
-                className="p-1 rounded text-gray-400 hover:text-teal-primary hover:bg-teal-primary/10 transition-colors"
+                className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-colors"
                 aria-label={`Rename folder ${folder.name}`}
               >
                 <Pencil className="w-3 h-3" />
@@ -166,8 +166,8 @@ export function FolderChips({
           className={cn(
             'flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium flex-shrink-0',
             'border-2 border-dashed border-gray-300 dark:border-gray-600',
-            'text-gray-500 dark:text-gray-400 hover:border-teal-primary hover:text-teal-primary',
-            'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary'
+            'text-gray-500 dark:text-gray-400 hover:border-indigo-500 hover:text-indigo-600',
+            'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500'
           )}
         >
           <Plus className="w-3.5 h-3.5" />

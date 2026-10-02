@@ -42,7 +42,7 @@ export function DashboardShell({ profile: initialProfile, children }: DashboardS
           title={title}
         />
 
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 md:p-6">
           {children}
         </main>
       </div>

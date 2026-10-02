@@ -55,8 +55,8 @@ export default function UsersPage() {
   return (
     <div className="space-y-5">
       {/* Add User form */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-5">
-        <h2 className="text-sm font-semibold text-slate-200 mb-4">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h2 className="text-sm font-semibold text-slate-800 mb-4">
           Add New User
         </h2>
         <AddUserForm
@@ -65,9 +65,9 @@ export default function UsersPage() {
       </div>
 
       {/* User table */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-5">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-200">
+          <h2 className="text-sm font-semibold text-slate-800">
             All Users
           </h2>
           <span className="text-xs text-slate-500">
@@ -78,7 +78,7 @@ export default function UsersPage() {
         {loading ? (
           <div className="space-y-2">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-slate-800 rounded-lg h-12" />
+              <div key={i} className="animate-pulse bg-slate-100 rounded-lg h-12" />
             ))}
           </div>
         ) : (

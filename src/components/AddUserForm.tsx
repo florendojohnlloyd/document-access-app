@@ -59,7 +59,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         <div>
           <label
             htmlFor="new-username"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+            className="block text-sm font-medium text-slate-600  mb-1.5"
           >
             Username
           </label>
@@ -72,8 +72,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             placeholder="e.g. juan.delacruz"
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
-              'border-slate-700 dark:border-gray-600',
+              'bg-slate-50  text-slate-900 dark:text-gray-100',
+              'border-slate-200 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           />
@@ -82,7 +82,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         <div>
           <label
             htmlFor="new-password"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+            className="block text-sm font-medium text-slate-600  mb-1.5"
           >
             Password
           </label>
@@ -96,8 +96,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             placeholder="Min. 6 characters"
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
-              'border-slate-700 dark:border-gray-600',
+              'bg-slate-50  text-slate-900 dark:text-gray-100',
+              'border-slate-200 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           />
@@ -106,7 +106,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         <div>
           <label
             htmlFor="new-role"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+            className="block text-sm font-medium text-slate-600  mb-1.5"
           >
             Role
           </label>
@@ -116,8 +116,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             onChange={(e) => setRole(e.target.value as Role)}
             className={cn(
               'w-full px-3 py-2.5 rounded-lg border text-sm',
-              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
-              'border-slate-700 dark:border-gray-600',
+              'bg-slate-50  text-slate-900 dark:text-gray-100',
+              'border-slate-200 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
           >

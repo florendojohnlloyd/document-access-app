@@ -109,7 +109,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
             ? 'border-indigo-600 bg-indigo-600/5'
             : selectedFile
             ? 'border-indigo-600/50 bg-indigo-600/5 cursor-default'
-            : 'border-slate-700 dark:border-gray-600 hover:border-indigo-600/50 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+            : 'border-slate-200 dark:border-gray-600 hover:border-indigo-600/50 hover:bg-slate-50 /50'
         )}
         role="button"
         tabIndex={0}
@@ -131,7 +131,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <CloudUpload className="w-5 h-5 text-indigo-600 flex-shrink-0" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+              <span className="text-sm font-medium text-slate-600  truncate">
                 {selectedFile.name}
               </span>
               <span className="text-xs text-slate-400 flex-shrink-0">
@@ -148,8 +148,8 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            <Upload className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <Upload className="w-8 h-8 text-slate-500  mx-auto" />
+            <p className="text-sm text-slate-500 ">
               <span className="font-medium text-indigo-500 hover:text-indigo-400">Click to browse</span>
               {' '}or drag and drop your file here
             </p>
@@ -166,8 +166,8 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
             onChange={(e) => setSelectedFolderId(e.target.value)}
             className={cn(
               'flex-1 px-3 py-2 rounded-lg border text-sm',
-              'bg-slate-950 dark:bg-slate-700 text-slate-100 dark:text-gray-100',
-              'border-slate-700 dark:border-gray-600',
+              'bg-slate-50  text-slate-900 dark:text-gray-100',
+              'border-slate-200 dark:border-gray-600',
               'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
             )}
             aria-label="Select folder"
@@ -208,7 +208,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
 
       {/* Progress bar */}
       {uploading && progress > 0 && (
-        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-100  rounded-full overflow-hidden">
           <div
             className="h-full bg-indigo-600 rounded-full transition-all duration-200"
             style={{ width: `${progress}%` }}

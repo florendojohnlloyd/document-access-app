@@ -85,7 +85,7 @@ export function FileTable({
     return (
       <div className="space-y-2">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="animate-pulse bg-slate-800 rounded-lg h-12" />
+          <div key={i} className="animate-pulse bg-slate-100 rounded-lg h-12" />
         ))}
       </div>
     );
@@ -95,8 +95,8 @@ export function FileTable({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
-        <p className="text-slate-500 dark:text-slate-400 font-medium">No files found</p>
-        <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
+        <p className="text-slate-500  font-medium">No files found</p>
+        <p className="text-slate-400  text-sm mt-1">
           Upload a file to get started.
         </p>
       </div>
@@ -108,7 +108,7 @@ export function FileTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-800">
+            <tr className="border-b border-slate-200">
               <th className="text-left py-3 px-4 font-medium text-slate-500">
                 Name
               </th>
@@ -126,11 +126,11 @@ export function FileTable({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-slate-100">
             {files.map((file) => (
               <tr
                 key={file.id}
-                className="hover:bg-slate-800/60 transition-colors group"
+                className="hover:bg-slate-100/60 transition-colors group"
               >
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2.5">
@@ -148,7 +148,7 @@ export function FileTable({
                 </td>
                 <td className="py-3 px-4 hidden sm:table-cell">
                   {file.folder ? (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 text-xs font-medium">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-400 text-xs font-medium">
                       {file.folder.name}
                     </span>
                   ) : (

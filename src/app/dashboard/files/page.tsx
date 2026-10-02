@@ -60,8 +60,8 @@ export default function FilesPage() {
   return (
     <div className="space-y-5">
       {/* Upload zone */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-5">
-        <h2 className="text-sm font-semibold text-slate-200 mb-4">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h2 className="text-sm font-semibold text-slate-800 mb-4">
           Upload File
         </h2>
         <UploadZone
@@ -71,7 +71,7 @@ export default function FilesPage() {
       </div>
 
       {/* Folder chips */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-5">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="mb-4">
           <FolderChips
             folders={folders}

@@ -63,10 +63,10 @@ export default function LogsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-5">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-semibold text-slate-200">Audit Logs</h2>
+            <h2 className="text-sm font-semibold text-slate-800">Audit Logs</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Last updated: {lastRefreshed.toLocaleTimeString('en-PH')} · Auto-refreshes every 30s
             </p>
@@ -94,7 +94,7 @@ export default function LogsPage() {
         {loading && logs.length === 0 ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-slate-800 rounded-lg h-10" />
+              <div key={i} className="animate-pulse bg-slate-100 rounded-lg h-10" />
             ))}
           </div>
         ) : (

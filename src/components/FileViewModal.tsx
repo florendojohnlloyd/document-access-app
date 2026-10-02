@@ -59,12 +59,12 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
       role="dialog"
       aria-labelledby="fileview-title"
     >
-      <div className="bg-slate-900 bg-slate-900 rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
+      <div className="bg-white bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 dark:border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-gray-700 flex-shrink-0">
           <h2
             id="fileview-title"
-            className="text-sm font-semibold text-slate-200 dark:text-gray-200 truncate max-w-xs"
+            className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate max-w-xs"
           >
             {fileName}
           </h2>
@@ -77,7 +77,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                   rel="noopener noreferrer"
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
-                    'bg-slate-800 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                    'bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
                     'hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors'
                   )}
                 >
@@ -100,7 +100,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-slate-800 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 -300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -128,7 +128,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                 <p className="text-red-500 dark:text-red-400 font-medium">{error}</p>
                 <button
                   onClick={onClose}
-                  className="mt-4 px-4 py-2 bg-slate-800 dark:bg-gray-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  className="mt-4 px-4 py-2 bg-slate-100 dark:bg-gray-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 >
                   Close
                 </button>

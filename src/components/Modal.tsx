@@ -70,20 +70,20 @@ export function Modal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-md outline-none"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h2
             id="modal-title"
-            className="text-base font-semibold text-slate-100 dark:text-gray-100"
+            className="text-base font-semibold text-slate-900 dark:text-gray-100"
           >
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+            className="text-slate-400 hover:text-slate-500 -500 transition-colors rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -93,12 +93,12 @@ export function Modal({
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
           {message && (
-            <p className="text-sm text-slate-600 dark:text-slate-400">{message}</p>
+            <p className="text-sm text-slate-500 ">{message}</p>
           )}
 
           {inputLabel && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-600  mb-1.5">
                 {inputLabel}
               </label>
               <input
@@ -107,8 +107,8 @@ export function Modal({
                 defaultValue={defaultValue}
                 className={cn(
                   'w-full px-4 py-2.5 rounded-lg border text-sm',
-                  'bg-slate-800 text-slate-100 dark:text-gray-100',
-                  'border-slate-700',
+                  'bg-slate-100 text-slate-900 dark:text-gray-100',
+                  'border-slate-200',
                   'focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent'
                 )}
                 onKeyDown={(e) => {
@@ -120,12 +120,12 @@ export function Modal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 ">
           <button
             onClick={onClose}
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-              'bg-slate-800 text-slate-700 dark:text-slate-300',
+              'bg-slate-100 text-slate-600 ',
               'hover:bg-gray-200 dark:hover:bg-gray-600',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600'
             )}

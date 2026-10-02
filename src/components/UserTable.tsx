@@ -36,8 +36,8 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <User className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
-        <p className="text-slate-500 dark:text-slate-400">No users found.</p>
+        <User className="w-10 h-10 text-slate-500  mb-2" />
+        <p className="text-slate-500 ">No users found.</p>
       </div>
     );
   }
@@ -47,7 +47,7 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-800">
+            <tr className="border-b border-slate-200">
               <th className="text-left py-3 px-4 font-medium text-slate-500">Username</th>
               <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">
                 Full Name
@@ -59,12 +59,12 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
               <th className="text-right py-3 px-4 font-medium text-slate-500">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-slate-100">
             {users.map((user) => (
               <tr
                 key={user.id}
                 className={cn(
-                  'hover:bg-slate-800/60 transition-colors',
+                  'hover:bg-slate-100/60 transition-colors',
                   user.id === currentUserId && 'bg-indigo-600/5 dark:bg-indigo-600/10'
                 )}
               >
@@ -75,13 +75,13 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
                         {user.username.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="font-medium text-slate-800 dark:text-slate-200">{user.username}</span>
+                    <span className="font-medium text-slate-800 ">{user.username}</span>
                     {user.id === currentUserId && (
                       <span className="text-xs text-slate-400">(you)</span>
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-4 hidden sm:table-cell text-slate-600 dark:text-slate-400">
+                <td className="py-3 px-4 hidden sm:table-cell text-slate-500 ">
                   {user.full_name ?? (
                     <span className="text-slate-400 italic text-xs">Not set</span>
                   )}
@@ -103,7 +103,7 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
                     {user.role === 'manager' ? 'Manager' : 'User'}
                   </span>
                 </td>
-                <td className="py-3 px-4 hidden md:table-cell text-slate-500 dark:text-slate-400 text-xs">
+                <td className="py-3 px-4 hidden md:table-cell text-slate-500  text-xs">
                   {formatDate(user.created_at)}
                 </td>
                 <td className="py-3 px-4">

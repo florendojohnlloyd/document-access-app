@@ -55,48 +55,53 @@ export default function FilesPage() {
     void fetchFiles();
   }, [fetchFiles]);
 
-  const isManager = profile?.role === 'super_admin';
+  const isSuperAdmin = profile?.role === 'super_admin';
+  // super_admin and admin can delete folders; only super_admin can create/rename
+  const canDeleteFolders = profile?.role === 'super_admin' || profile?.role === 'admin';
 
   return (
-    <div className="space-y-5">
-      {/* Upload zone */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 className="text-sm font-semibold text-slate-800 mb-4">
-          Upload File
-        </h2>
+    <div className="space-y-4">
+      {/* Upload zone — compact inline card */}
+      <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Upload</h2>
+        </div>
         <UploadZone
           folders={folders}
           onUploaded={() => void fetchFiles()}
         />
       </div>
 
-      {/* Folder chips */}
+      {/* Files card */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
+        {/* Folder chips */}
         <div className="mb-4">
           <FolderChips
             folders={folders}
             selectedId={selectedFolderId}
             onSelect={setSelectedFolderId}
-            isManager={isManager}
+            isManager={isSuperAdmin}
+            canDelete={canDeleteFolders}
             onFolderCreated={(folder) => setFolders((prev) => [...prev, folder])}
             onFolderRenamed={(updated) =>
               setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
             }
-            onFolderDeleted={(id) => setFolders((prev) => prev.filter((f) => f.id !== id))}
+            onFolderDeleted={(id) => {
+              setFolders((prev) => prev.filter((f) => f.id !== id));
+              if (selectedFolderId === id) setSelectedFolderId(null);
+            }}
           />
         </div>
 
         {/* File count */}
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-slate-500">
-            {loadingFiles ? 'Loading...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
+        <p className="text-xs text-slate-400 mb-3">
+          {loadingFiles ? 'Loading...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
+        </p>
 
         {/* File table */}
         <FileTable
           files={files}
-          isManager={isManager}
+          isManager={isSuperAdmin}
           onFileRenamed={(updated) =>
             setFiles((prev) => prev.map((f) => (f.id === updated.id ? { ...f, name: updated.name } : f)))
           }
@@ -107,5 +112,3 @@ export default function FilesPage() {
     </div>
   );
 }
-
-

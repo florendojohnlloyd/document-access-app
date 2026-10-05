@@ -97,7 +97,7 @@ CREATE POLICY "Managers can delete folders"
   USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'super_admin'
+      WHERE id = auth.uid() AND role IN ('super_admin', 'admin')
     )
   );
 

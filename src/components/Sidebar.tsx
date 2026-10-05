@@ -63,9 +63,9 @@ export function Sidebar({ profile, isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 py-5 space-y-1 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {isOpen && (
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-3 whitespace-nowrap">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 whitespace-nowrap">
               Navigation
             </p>
           )}

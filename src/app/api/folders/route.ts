@@ -131,8 +131,9 @@ export async function DELETE(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const profile = await getProfile(supabase, session.user.id);
-    if (!profile || profile.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden. Super Admins only.' }, { status: 403 });
+    // super_admin and admin can delete folders
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

@@ -11,6 +11,7 @@ interface FolderChipsProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   isManager: boolean;
+  canDelete?: boolean;
   onFolderCreated: (folder: Folder) => void;
   onFolderRenamed: (folder: Folder) => void;
   onFolderDeleted: (id: string) => void;
@@ -23,10 +24,12 @@ export function FolderChips({
   selectedId,
   onSelect,
   isManager,
+  canDelete,
   onFolderCreated,
   onFolderRenamed,
   onFolderDeleted,
 }: FolderChipsProps) {
+  const canDeleteFolders = canDelete ?? isManager;
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [targetFolder, setTargetFolder] = useState<Folder | null>(null);
   const [error, setError] = useState('');
@@ -126,31 +129,35 @@ export function FolderChips({
             {folder.name}
           </button>
 
-          {/* Manager folder actions */}
-          {isManager && (
+          {/* Folder actions — rename for managers, delete for managers and admins */}
+          {(isManager || canDeleteFolders) && (
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => {
-                  setTargetFolder(folder);
-                  setError('');
-                  setModalMode('rename');
-                }}
-                className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-colors"
-                aria-label={`Rename folder ${folder.name}`}
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
-              <button
-                onClick={() => {
-                  setTargetFolder(folder);
-                  setError('');
-                  setModalMode('delete');
-                }}
-                className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                aria-label={`Delete folder ${folder.name}`}
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+              {isManager && (
+                <button
+                  onClick={() => {
+                    setTargetFolder(folder);
+                    setError('');
+                    setModalMode('rename');
+                  }}
+                  className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-colors"
+                  aria-label={`Rename folder ${folder.name}`}
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+              )}
+              {canDeleteFolders && (
+                <button
+                  onClick={() => {
+                    setTargetFolder(folder);
+                    setError('');
+                    setModalMode('delete');
+                  }}
+                  className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  aria-label={`Delete folder ${folder.name}`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, ExternalLink, Download } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, FileSpreadsheet, File, FileImage } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileViewModalProps {
@@ -14,10 +14,19 @@ function getExtension(name: string): string {
   return name.split('.').pop()?.toLowerCase() ?? '';
 }
 
+function FileTypeIcon({ ext }: { ext: string }) {
+  if (ext === 'pdf') return <FileText className="w-10 h-10 text-red-400" />;
+  if (['xls', 'xlsx'].includes(ext)) return <FileSpreadsheet className="w-10 h-10 text-green-500" />;
+  if (['doc', 'docx'].includes(ext)) return <FileText className="w-10 h-10 text-blue-500" />;
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return <FileImage className="w-10 h-10 text-purple-400" />;
+  return <File className="w-10 h-10 text-slate-400" />;
+}
+
 export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [iframeError, setIframeError] = useState(false);
 
   const ext = getExtension(fileName);
   const isPdf = ext === 'pdf';
@@ -40,7 +49,6 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
         setLoading(false);
       }
     };
-
     void fetchUrl();
   }, [fileId]);
 
@@ -54,19 +62,16 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
       aria-modal="true"
       role="dialog"
       aria-labelledby="fileview-title"
     >
-      <div className="bg-white bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-gray-700 flex-shrink-0">
-          <h2
-            id="fileview-title"
-            className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate max-w-xs"
-          >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 flex-shrink-0">
+          <h2 id="fileview-title" className="text-sm font-semibold text-slate-800 truncate max-w-xs">
             {fileName}
           </h2>
           <div className="flex items-center gap-2">
@@ -76,11 +81,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
-                    'bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
-                    'hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors'
-                  )}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open
@@ -88,11 +89,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                 <a
                   href={url}
                   download={fileName}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
-                    'bg-teal-primary text-white',
-                    'hover:bg-teal-dark transition-colors'
-                  )}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download
@@ -101,87 +98,94 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 -300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden bg-slate-50">
+          {/* Loading */}
           {loading && (
             <div className="flex items-center justify-center h-full">
-              <div className="flex flex-col items-center gap-3">
-                <svg className="animate-spin w-8 h-8 text-teal-primary" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Loading file...</p>
-              </div>
+              <svg className="animate-spin w-7 h-7 text-indigo-500" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
             </div>
           )}
 
+          {/* Error */}
           {!loading && error && (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <p className="text-red-500 dark:text-red-400 font-medium">{error}</p>
-                <button
-                  onClick={onClose}
-                  className="mt-4 px-4 py-2 bg-slate-100 dark:bg-gray-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
+              <p className="text-red-500 text-sm">{error}</p>
             </div>
           )}
 
+          {/* PDF — direct iframe */}
           {!loading && url && isPdf && (
             <iframe
               src={url}
               className="w-full h-full border-0"
               title={fileName}
-              aria-label={`Preview of ${fileName}`}
             />
           )}
 
+          {/* Image */}
           {!loading && url && isImage && (
-            <div className="flex items-center justify-center h-full p-4 overflow-auto">
+            <div className="flex items-center justify-center h-full p-6 overflow-auto">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
                 alt={fileName}
-                className="max-w-full max-h-full object-contain rounded-lg"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
               />
             </div>
           )}
 
-          {!loading && url && isOffice && (
+          {/* Office files — MS Office Online viewer, falls back to download card */}
+          {!loading && url && isOffice && !iframeError && (
             <iframe
-              src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+              key={url}
+              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
               className="w-full h-full border-0"
               title={fileName}
-              aria-label={`Preview of ${fileName}`}
+              onError={() => setIframeError(true)}
             />
           )}
 
-          {!loading && url && !isPdf && !isImage && !isOffice && (
-            <div className="flex flex-col items-center justify-center h-full gap-4">
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                Hindi ma-preview ang file na ito. I-download para buksan.
-              </p>
-              <a
-                href={url}
-                download={fileName}
-                className={cn(
-                  'flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium',
-                  'bg-teal-primary text-white hover:bg-teal-dark transition-colors'
-                )}
-              >
-                <Download className="w-4 h-4" />
-                I-download ang {fileName}
-              </a>
+          {/* Office fallback or unsupported */}
+          {!loading && url && (isOffice && iframeError || (!isPdf && !isImage && !isOffice)) && (
+            <div className="flex flex-col items-center justify-center h-full gap-5 p-6">
+              <FileTypeIcon ext={ext} />
+              <div className="text-center">
+                <p className="text-slate-700 font-medium text-sm">{fileName}</p>
+                <p className="text-slate-400 text-xs mt-1">
+                  Hindi ma-preview ang file na ito sa browser.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Buksan sa bagong tab
+                </a>
+                <a
+                  href={url}
+                  download={fileName}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  I-download
+                </a>
+              </div>
             </div>
           )}
         </div>
@@ -189,4 +193,3 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
     </div>
   );
 }
-

@@ -23,8 +23,9 @@ export async function GET() {
   try {
     const { supabase, session, profile } = await getSessionAndProfile();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!profile || profile.role !== 'manager') {
-      return NextResponse.json({ error: 'Forbidden. Managers only.' }, { status: 403 });
+    // Both super_admin and admin can list users (admin is view-only)
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
     const { data: users, error } = await supabase
@@ -43,8 +44,9 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, session, profile } = await getSessionAndProfile();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!profile || profile.role !== 'manager') {
-      return NextResponse.json({ error: 'Forbidden. Managers only.' }, { status: 403 });
+    // Only super_admin can create users
+    if (!profile || profile.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Forbidden. Super Admins only.' }, { status: 403 });
     }
 
     const body = await request.json() as { username?: string; password?: string; role?: string };
@@ -54,8 +56,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Username at password ay required.' }, { status: 400 });
     }
 
-    if (!role || !['manager', 'user'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid role. Use "manager" or "user".' }, { status: 400 });
+    if (!role || !['super_admin', 'admin', 'user'].includes(role)) {
+      return NextResponse.json({ error: 'Invalid role. Use "super_admin", "admin", or "user".' }, { status: 400 });
     }
 
     if (password.length < 6) {
@@ -79,7 +81,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: authError.message }, { status: 500 });
     }
 
-    // Create profile (trigger might handle this, but we do it explicitly too)
+    // Create profile
     const { data: newProfile, error: profileError } = await serviceClient
       .from('profiles')
       .upsert({

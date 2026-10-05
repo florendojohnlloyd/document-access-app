@@ -10,7 +10,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id            uuid        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username      text        UNIQUE NOT NULL,
   full_name     text,
-  role          text        NOT NULL DEFAULT 'user' CHECK (role IN ('manager', 'user')),
+  -- MIGRATION REQUIRED: Run the SQL below in Supabase SQL Editor to update roles.
+  -- The app now uses 'super_admin' | 'admin' | 'user' instead of 'manager' | 'user'.
+  --
+  -- Step 1 — Drop old constraint and add new one:
+  --   ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+  --   ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check
+  --     CHECK (role IN ('super_admin', 'admin', 'user'));
+  --
+  -- Step 2 — Rename existing 'manager' accounts to 'super_admin':
+  --   UPDATE public.profiles SET role = 'super_admin' WHERE role = 'manager';
+  --
+  -- Step 3 — Update RLS policies that reference role = 'manager'
+  --   (see folders, files, audit_logs, storage policies below and re-run them).
+  --
+  role          text        NOT NULL DEFAULT 'user' CHECK (role IN ('super_admin', 'admin', 'user')),
   name_locked   boolean     NOT NULL DEFAULT false,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
@@ -63,7 +77,7 @@ CREATE POLICY "Managers can create folders"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'manager'
+      WHERE id = auth.uid() AND role = 'super_admin'
     )
   );
 
@@ -73,7 +87,7 @@ CREATE POLICY "Managers can update folders"
   USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'manager'
+      WHERE id = auth.uid() AND role = 'super_admin'
     )
   );
 
@@ -83,7 +97,7 @@ CREATE POLICY "Managers can delete folders"
   USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'manager'
+      WHERE id = auth.uid() AND role = 'super_admin'
     )
   );
 
@@ -118,7 +132,7 @@ CREATE POLICY "Managers can update files"
   USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'manager'
+      WHERE id = auth.uid() AND role = 'super_admin'
     )
   );
 
@@ -128,7 +142,7 @@ CREATE POLICY "Managers can delete files"
   USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'manager'
+      WHERE id = auth.uid() AND role = 'super_admin'
     )
   );
 
@@ -163,7 +177,7 @@ CREATE POLICY "Managers can view all audit logs"
   USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'manager'
+      WHERE id = auth.uid() AND role IN ('super_admin', 'admin')
     )
     OR actor_id = auth.uid()
   );
@@ -218,7 +232,7 @@ CREATE POLICY "Managers can delete"
     bucket_id = 'documents' AND
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'manager'
+      WHERE id = auth.uid() AND role = 'super_admin'
     )
   );
 

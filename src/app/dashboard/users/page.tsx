@@ -17,7 +17,7 @@ export default function UsersPage() {
       .then((r) => r.json())
       .then((data: Profile) => {
         setCurrentProfile(data);
-        if (data.role !== 'manager') {
+        if (!['super_admin', 'admin'].includes(data.role)) {
           router.replace('/dashboard/files');
         }
       })
@@ -39,12 +39,12 @@ export default function UsersPage() {
   }, [currentProfile]);
 
   useEffect(() => {
-    if (currentProfile?.role === 'manager') {
+    if (currentProfile && ['super_admin', 'admin'].includes(currentProfile.role)) {
       void fetchUsers();
     }
   }, [currentProfile, fetchUsers]);
 
-  if (!currentProfile || currentProfile.role !== 'manager') {
+  if (!currentProfile || !['super_admin', 'admin'].includes(currentProfile.role)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent" />
@@ -52,24 +52,33 @@ export default function UsersPage() {
     );
   }
 
+  const isSuperAdmin = currentProfile.role === 'super_admin';
+
   return (
     <div className="space-y-5">
-      {/* Add User form */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 className="text-sm font-semibold text-slate-800 mb-4">
-          Add New User
-        </h2>
-        <AddUserForm
-          onCreated={(user) => setUsers((prev) => [user, ...prev])}
-        />
-      </div>
+      {/* Add User form — super_admin only */}
+      {isSuperAdmin && (
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h2 className="text-sm font-semibold text-slate-800 mb-4">
+            Add New User
+          </h2>
+          <AddUserForm
+            onCreated={(user) => setUsers((prev) => [user, ...prev])}
+          />
+        </div>
+      )}
 
       {/* User table */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-800">
-            All Users
-          </h2>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-800">
+              All Users
+            </h2>
+            {!isSuperAdmin && (
+              <p className="text-xs text-slate-500 mt-0.5">View only — contact a Super Admin to make changes.</p>
+            )}
+          </div>
           <span className="text-xs text-slate-500">
             {loading ? '...' : `${users.length} user${users.length !== 1 ? 's' : ''}`}
           </span>
@@ -85,6 +94,7 @@ export default function UsersPage() {
           <UserTable
             users={users}
             currentUserId={currentProfile.id}
+            currentUserRole={currentProfile.role}
             onDeleted={(id) => setUsers((prev) => prev.filter((u) => u.id !== id))}
           />
         )}
@@ -92,5 +102,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-

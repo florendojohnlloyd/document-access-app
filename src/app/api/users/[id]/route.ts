@@ -20,8 +20,9 @@ export async function DELETE(
       .eq('id', session.user.id)
       .single();
 
-    if (!actorProfile || actorProfile.role !== 'manager') {
-      return NextResponse.json({ error: 'Forbidden. Managers only.' }, { status: 403 });
+    // Only super_admin can delete users
+    if (!actorProfile || actorProfile.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Forbidden. Super Admins only.' }, { status: 403 });
     }
 
     // Prevent self-deletion
@@ -38,6 +39,11 @@ export async function DELETE(
 
     if (!targetProfile) {
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+    }
+
+    // Prevent deleting other super_admins
+    if (targetProfile.role === 'super_admin') {
+      return NextResponse.json({ error: 'Hindi mabubura ang isang Super Admin account.' }, { status: 403 });
     }
 
     const serviceClient = createServiceClient();

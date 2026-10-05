@@ -35,8 +35,8 @@ export async function PATCH(request: NextRequest) {
 
     if (!currentProfile) return NextResponse.json({ error: 'Profile not found.' }, { status: 404 });
 
-    // Users cannot change name once locked; managers can always edit
-    if (currentProfile.role === 'user' && currentProfile.name_locked) {
+    // super_admin can always edit name; admin and user are subject to name_locked
+    if (currentProfile.role !== 'super_admin' && currentProfile.name_locked) {
       return NextResponse.json({ error: 'Your name is locked and cannot be changed.' }, { status: 403 });
     }
 
@@ -44,8 +44,8 @@ export async function PATCH(request: NextRequest) {
       .from('profiles')
       .update({
         full_name: full_name.trim(),
-        // Lock name for users only; managers keep theirs editable
-        name_locked: currentProfile.role === 'user' ? true : currentProfile.name_locked,
+        // Lock name for non-super_admin users after first set
+        name_locked: currentProfile.role !== 'super_admin' ? true : currentProfile.name_locked,
       })
       .eq('id', session.user.id)
       .select()

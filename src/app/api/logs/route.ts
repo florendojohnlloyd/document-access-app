@@ -21,8 +21,8 @@ export async function GET() {
       .select('*')
       .order('created_at', { ascending: false });
 
-    // Regular users can only see their own logs
-    if (!profile || profile.role !== 'manager') {
+    // super_admin and admin can see all logs; regular users see only their own
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
       query = query.eq('actor_id', session.user.id);
     }
 

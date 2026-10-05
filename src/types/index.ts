@@ -1,4 +1,4 @@
-export type Role = 'manager' | 'user';
+export type Role = 'super_admin' | 'admin' | 'user';
 
 export type ActionType =
   | 'LOGIN'

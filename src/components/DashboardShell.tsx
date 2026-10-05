@@ -18,7 +18,7 @@ export function DashboardShell({ profile: initialProfile, children }: { profile:
   const [profile, setProfile] = useState(initialProfile);
   const pathname = usePathname();
   const title = PAGE_TITLES[pathname] ?? 'Dashboard';
-  const needsName = profile.role === 'user' && !profile.name_locked && !profile.full_name;
+  const needsName = profile.role !== 'super_admin' && !profile.name_locked && !profile.full_name;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">

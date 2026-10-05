@@ -64,8 +64,12 @@ export function Header({ profile, sidebarOpen, onToggleSidebar, onProfileUpdated
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-sm font-semibold text-slate-800 leading-tight">{displayName}</p>
-              <p className={cn('text-xs font-medium', profile.role === 'manager' ? 'text-amber-500' : 'text-blue-500')}>
-                {profile.role === 'manager' ? 'Manager' : 'User'}
+              <p className={cn('text-xs font-medium',
+                profile.role === 'super_admin' ? 'text-amber-500' :
+                profile.role === 'admin' ? 'text-purple-500' :
+                'text-blue-500'
+              )}>
+                {profile.role === 'super_admin' ? 'Super Admin' : profile.role === 'admin' ? 'Admin' : 'User'}
               </p>
             </div>
             <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 hidden sm:block transition-colors" />

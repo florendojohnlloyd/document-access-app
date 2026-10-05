@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Files, Users, ClipboardList, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Profile } from '@/types';
+import type { Profile, Role } from '@/types';
 
 interface SidebarProps {
   profile: Profile;
@@ -13,16 +13,20 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { label: 'Files', href: '/dashboard/files', icon: Files, roles: ['manager', 'user'] as const },
-  { label: 'Users', href: '/dashboard/users', icon: Users, roles: ['manager'] as const },
-  { label: 'Audit Logs', href: '/dashboard/logs', icon: ClipboardList, roles: ['manager'] as const },
+  { label: 'Files', href: '/dashboard/files', icon: Files, roles: ['super_admin', 'admin', 'user'] as Role[] },
+  { label: 'Users', href: '/dashboard/users', icon: Users, roles: ['super_admin', 'admin'] as Role[] },
+  { label: 'Audit Logs', href: '/dashboard/logs', icon: ClipboardList, roles: ['super_admin', 'admin'] as Role[] },
 ];
+
+function RoleLabel({ role }: { role: Role }) {
+  if (role === 'super_admin') return <span className="text-xs font-semibold text-amber-500">⭐ Super Admin</span>;
+  if (role === 'admin') return <span className="text-xs font-semibold text-purple-500">🛡 Admin</span>;
+  return <span className="text-xs font-semibold text-blue-500">User</span>;
+}
 
 export function Sidebar({ profile, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const visibleItems = navItems.filter(item =>
-    (item.roles as readonly string[]).includes(profile.role)
-  );
+  const visibleItems = navItems.filter(item => item.roles.includes(profile.role));
 
   return (
     <>
@@ -111,12 +115,7 @@ export function Sidebar({ profile, isOpen, onClose }: SidebarProps) {
                 <p className="text-slate-900 text-sm font-medium truncate">
                   {profile.full_name ?? profile.username}
                 </p>
-                <span className={cn(
-                  'text-xs font-semibold',
-                  profile.role === 'manager' ? 'text-amber-500' : 'text-blue-500'
-                )}>
-                  {profile.role === 'manager' ? '⭐ Manager' : 'User'}
-                </span>
+                <RoleLabel role={profile.role} />
               </div>
             </div>
           ) : (

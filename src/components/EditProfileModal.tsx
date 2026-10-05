@@ -32,8 +32,8 @@ export function EditProfileModal({ profile, onSaved, onClose }: EditProfileModal
     e.preventDefault();
     setError(''); setSuccess('');
     if (!fullName.trim()) { setError('Full name is required.'); return; }
-    // Manager can always edit name; user locked after first set
-    if (profile.role === 'user' && profile.name_locked) {
+    // super_admin can always edit name; admin and user locked after first set
+    if (profile.role !== 'super_admin' && profile.name_locked) {
       setError('Your name is locked and cannot be changed.'); return;
     }
     setLoading(true);
@@ -124,9 +124,13 @@ export function EditProfileModal({ profile, onSaved, onClose }: EditProfileModal
             </div>
             <div>
               <p className="font-semibold text-slate-900">{profile.full_name ?? profile.username}</p>
-              <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', profile.role === 'manager' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600')}>
-                {profile.role === 'manager' ? '⭐ Manager' : 'User'}
-              </span>
+              <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full',
+              profile.role === 'super_admin' ? 'bg-amber-100 text-amber-600' :
+              profile.role === 'admin' ? 'bg-purple-100 text-purple-600' :
+              'bg-blue-100 text-blue-600'
+            )}>
+              {profile.role === 'super_admin' ? '⭐ Super Admin' : profile.role === 'admin' ? '🛡 Admin' : 'User'}
+            </span>
             </div>
           </div>
 
@@ -159,16 +163,16 @@ export function EditProfileModal({ profile, onSaved, onClose }: EditProfileModal
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your full name"
-                  disabled={profile.role === 'user' && profile.name_locked}
-                  className={cn(inputClass, profile.role === 'user' && profile.name_locked && 'opacity-50 cursor-not-allowed')}
+                  disabled={profile.role !== 'super_admin' && profile.name_locked}
+                  className={cn(inputClass, profile.role !== 'super_admin' && profile.name_locked && 'opacity-50 cursor-not-allowed')}
                 />
-                {profile.role === 'user' && profile.name_locked && (
+                {profile.role !== 'super_admin' && profile.name_locked && (
                   <p className="text-xs text-amber-500 mt-1">⚠ Name is locked and cannot be changed.</p>
                 )}
               </div>
               <button
                 type="submit"
-                disabled={loading || (profile.role === 'user' && profile.name_locked)}
+                disabled={loading || (profile.role !== 'super_admin' && profile.name_locked)}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg> : <Save className="w-4 h-4" />}

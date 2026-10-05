@@ -55,7 +55,7 @@ export default function FilesPage() {
     void fetchFiles();
   }, [fetchFiles]);
 
-  const isManager = profile?.role === 'manager';
+  const isManager = profile?.role === 'super_admin';
 
   return (
     <div className="space-y-5">

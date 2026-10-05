@@ -13,6 +13,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('user');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -106,7 +107,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             className={inputClass}
           >
             <option value="user">User (View &amp; Upload)</option>
-            <option value="manager">Manager (Full Access)</option>
+            <option value="admin">Admin (View Only)</option>
+            <option value="super_admin">Super Admin (Full Access)</option>
           </select>
         </div>
       </div>

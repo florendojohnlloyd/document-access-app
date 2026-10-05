@@ -1,20 +1,48 @@
 'use client';
 
 import { useState } from 'react';
-import { Trash2, Shield, User } from 'lucide-react';
+import { Trash2, ShieldCheck, Shield, User } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { Modal } from './Modal';
-import type { Profile } from '@/types';
+import type { Profile, Role } from '@/types';
 
 interface UserTableProps {
   users: Profile[];
   currentUserId: string;
+  currentUserRole: Role;
   onDeleted: (id: string) => void;
 }
 
-export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
+function RoleBadge({ role }: { role: Role }) {
+  if (role === 'super_admin') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-600 dark:text-yellow-300">
+        <ShieldCheck className="w-3 h-3" />
+        Super Admin
+      </span>
+    );
+  }
+  if (role === 'admin') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+        <Shield className="w-3 h-3" />
+        Admin
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-600/10 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+      <User className="w-3 h-3" />
+      User
+    </span>
+  );
+}
+
+export function UserTable({ users, currentUserId, currentUserRole, onDeleted }: UserTableProps) {
   const [target, setTarget] = useState<Profile | null>(null);
   const [error, setError] = useState('');
+
+  const canDelete = currentUserRole === 'super_admin';
 
   const handleDelete = async () => {
     if (!target) return;
@@ -36,8 +64,8 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <User className="w-10 h-10 text-slate-500  mb-2" />
-        <p className="text-slate-500 ">No users found.</p>
+        <User className="w-10 h-10 text-slate-500 mb-2" />
+        <p className="text-slate-500">No users found.</p>
       </div>
     );
   }
@@ -56,7 +84,9 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
               <th className="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">
                 Created At
               </th>
-              <th className="text-right py-3 px-4 font-medium text-slate-500">Actions</th>
+              {canDelete && (
+                <th className="text-right py-3 px-4 font-medium text-slate-500">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -75,54 +105,42 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
                         {user.username.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="font-medium text-slate-800 ">{user.username}</span>
+                    <span className="font-medium text-slate-800">{user.username}</span>
                     {user.id === currentUserId && (
                       <span className="text-xs text-slate-400">(you)</span>
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-4 hidden sm:table-cell text-slate-500 ">
+                <td className="py-3 px-4 hidden sm:table-cell text-slate-500">
                   {user.full_name ?? (
                     <span className="text-slate-400 italic text-xs">Not set</span>
                   )}
                 </td>
                 <td className="py-3 px-4">
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-                      user.role === 'manager'
-                        ? 'bg-amber-500/15 dark:bg-yellow-900/30 text-amber-300 dark:text-yellow-300'
-                        : 'bg-blue-600/10 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                    )}
-                  >
-                    {user.role === 'manager' ? (
-                      <Shield className="w-3 h-3" />
-                    ) : (
-                      <User className="w-3 h-3" />
-                    )}
-                    {user.role === 'manager' ? 'Manager' : 'User'}
-                  </span>
+                  <RoleBadge role={user.role} />
                 </td>
-                <td className="py-3 px-4 hidden md:table-cell text-slate-500  text-xs">
+                <td className="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">
                   {formatDate(user.created_at)}
                 </td>
-                <td className="py-3 px-4">
-                  <div className="flex justify-end">
-                    {user.id !== currentUserId && (
-                      <button
-                        onClick={() => { setTarget(user); setError(''); }}
-                        className={cn(
-                          'p-1.5 rounded-lg transition-colors',
-                          'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
-                        )}
-                        aria-label={`Delete ${user.username}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </td>
+                {canDelete && (
+                  <td className="py-3 px-4">
+                    <div className="flex justify-end">
+                      {user.id !== currentUserId && user.role !== 'super_admin' && (
+                        <button
+                          onClick={() => { setTarget(user); setError(''); }}
+                          className={cn(
+                            'p-1.5 rounded-lg transition-colors',
+                            'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
+                          )}
+                          aria-label={`Delete ${user.username}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -151,6 +169,3 @@ export function UserTable({ users, currentUserId, onDeleted }: UserTableProps) {
     </>
   );
 }
-
-
-

@@ -21,7 +21,8 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
 
   const ext = getExtension(fileName);
   const isPdf = ext === 'pdf';
-  const isImage = ['png', 'jpg', 'jpeg'].includes(ext);
+  const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
+  const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext);
 
   useEffect(() => {
     const fetchUrl = async () => {
@@ -156,7 +157,16 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
             </div>
           )}
 
-          {!loading && url && !isPdf && !isImage && (
+          {!loading && url && isOffice && (
+            <iframe
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+              className="w-full h-full border-0"
+              title={fileName}
+              aria-label={`Preview of ${fileName}`}
+            />
+          )}
+
+          {!loading && url && !isPdf && !isImage && !isOffice && (
             <div className="flex flex-col items-center justify-center h-full gap-4">
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 Hindi ma-preview ang file na ito. I-download para buksan.

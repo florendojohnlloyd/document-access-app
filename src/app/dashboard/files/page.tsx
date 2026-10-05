@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FolderChips } from '@/components/FolderChips';
+import { FolderSelect } from '@/components/FolderSelect';
 import { FileTable } from '@/components/FileTable';
 import { UploadZone } from '@/components/UploadZone';
 import type { FileRecord, Folder, Profile } from '@/types';
@@ -13,7 +13,6 @@ export default function FilesPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(true);
 
-  // Fetch current user profile
   useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
@@ -21,7 +20,6 @@ export default function FilesPage() {
       .catch(() => {});
   }, []);
 
-  // Fetch folders
   const fetchFolders = useCallback(async () => {
     try {
       const res = await fetch('/api/folders');
@@ -30,7 +28,6 @@ export default function FilesPage() {
     } catch {}
   }, []);
 
-  // Fetch files
   const fetchFiles = useCallback(async () => {
     setLoadingFiles(true);
     try {
@@ -47,36 +44,25 @@ export default function FilesPage() {
     }
   }, [selectedFolderId]);
 
-  useEffect(() => {
-    void fetchFolders();
-  }, [fetchFolders]);
-
-  useEffect(() => {
-    void fetchFiles();
-  }, [fetchFiles]);
+  useEffect(() => { void fetchFolders(); }, [fetchFolders]);
+  useEffect(() => { void fetchFiles(); }, [fetchFiles]);
 
   const isSuperAdmin = profile?.role === 'super_admin';
-  // super_admin and admin can delete folders; only super_admin can create/rename
   const canDeleteFolders = profile?.role === 'super_admin' || profile?.role === 'admin';
 
   return (
     <div className="space-y-4">
-      {/* Upload zone — compact inline card */}
+      {/* Upload zone */}
       <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Upload</h2>
-        </div>
-        <UploadZone
-          folders={folders}
-          onUploaded={() => void fetchFiles()}
-        />
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
+        <UploadZone folders={folders} onUploaded={() => void fetchFiles()} />
       </div>
 
       {/* Files card */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        {/* Folder chips */}
-        <div className="mb-4">
-          <FolderChips
+        {/* Toolbar: folder dropdown + file count */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <FolderSelect
             folders={folders}
             selectedId={selectedFolderId}
             onSelect={setSelectedFolderId}
@@ -91,14 +77,11 @@ export default function FilesPage() {
               if (selectedFolderId === id) setSelectedFolderId(null);
             }}
           />
+          <span className="text-xs text-slate-400 flex-shrink-0">
+            {loadingFiles ? '...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
+          </span>
         </div>
 
-        {/* File count */}
-        <p className="text-xs text-slate-400 mb-3">
-          {loadingFiles ? 'Loading...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
-        </p>
-
-        {/* File table */}
         <FileTable
           files={files}
           isManager={isSuperAdmin}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { RefreshCw, Filter, X } from 'lucide-react';
+import { RefreshCw, Search, X } from 'lucide-react';
 import { LogTable } from '@/components/LogTable';
 import { cn } from '@/lib/utils';
 import type { AuditLog, Profile } from '@/types';
@@ -14,9 +14,10 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
 
-  // Date/time filter state
+  // Filters
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -47,43 +48,41 @@ export default function LogsPage() {
   useEffect(() => {
     if (currentProfile && ['super_admin', 'admin'].includes(currentProfile.role)) {
       void fetchLogs();
-
-      // Auto-refresh every 30 seconds
-      const interval = setInterval(() => {
-        void fetchLogs();
-      }, 30000);
-
+      const interval = setInterval(() => void fetchLogs(), 30000);
       return () => clearInterval(interval);
     }
   }, [currentProfile, fetchLogs]);
 
-  // Client-side date filtering
   const filteredLogs = useMemo(() => {
-    if (!fromDate && !toDate) return logs;
+    let result = logs;
 
-    return logs.filter((log) => {
-      const ts = new Date(log.created_at).getTime();
+    // Date range filter
+    if (fromDate) {
+      const from = new Date(fromDate + 'T00:00:00').getTime();
+      result = result.filter((l) => new Date(l.created_at).getTime() >= from);
+    }
+    if (toDate) {
+      const to = new Date(toDate + 'T23:59:59').getTime();
+      result = result.filter((l) => new Date(l.created_at).getTime() <= to);
+    }
 
-      if (fromDate) {
-        const from = new Date(fromDate + 'T00:00:00').getTime();
-        if (ts < from) return false;
-      }
+    // Text search — actor, action, detail
+    const q = search.trim().toLowerCase();
+    if (q) {
+      result = result.filter(
+        (l) =>
+          (l.actor_name ?? '').toLowerCase().includes(q) ||
+          l.action.toLowerCase().includes(q) ||
+          (l.detail ?? '').toLowerCase().includes(q)
+      );
+    }
 
-      if (toDate) {
-        const to = new Date(toDate + 'T23:59:59').getTime();
-        if (ts > to) return false;
-      }
+    return result;
+  }, [logs, fromDate, toDate, search]);
 
-      return true;
-    });
-  }, [logs, fromDate, toDate]);
+  const hasFilter = fromDate || toDate || search;
 
-  const hasFilter = fromDate || toDate;
-
-  const clearFilter = () => {
-    setFromDate('');
-    setToDate('');
-  };
+  const clearAll = () => { setFromDate(''); setToDate(''); setSearch(''); };
 
   if (!currentProfile || !['super_admin', 'admin'].includes(currentProfile.role)) {
     return (
@@ -93,23 +92,26 @@ export default function LogsPage() {
     );
   }
 
+  const inputClass = cn(
+    'px-3 py-2 rounded-lg border text-sm bg-white text-slate-900 border-slate-200',
+    'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors'
+  );
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        {/* Header row */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-semibold text-slate-800">Audit Logs</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Last updated: {lastRefreshed.toLocaleTimeString('en-PH')} · Auto-refreshes every 30s
+            <p className="text-xs text-slate-400 mt-0.5">
+              {lastRefreshed.toLocaleTimeString('en-PH')} · auto-refresh 30s
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500">
-              {loading
-                ? '...'
-                : hasFilter
-                ? `Showing ${filteredLogs.length} of ${logs.length} log${logs.length !== 1 ? 's' : ''}`
+            <span className="text-xs text-slate-400">
+              {loading ? '...' : hasFilter
+                ? `${filteredLogs.length} of ${logs.length}`
                 : `${logs.length} log${logs.length !== 1 ? 's' : ''}`}
             </span>
             <button
@@ -117,60 +119,62 @@ export default function LogsPage() {
               disabled={loading}
               className={cn(
                 'p-2 rounded-lg transition-colors',
-                'text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+                'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
-              aria-label="Refresh logs"
+              aria-label="Refresh"
             >
               <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
             </button>
           </div>
         </div>
 
-        {/* Date/time filter */}
-        <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <Filter className="w-4 h-4 text-slate-400 flex-shrink-0 mb-2.5" />
+        {/* Filter row */}
+        <div className="flex flex-wrap items-end gap-3 mb-4">
+          {/* Search */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 w-52">
+            <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search actor, action, detail..."
+              className="w-full bg-transparent text-sm text-slate-700 placeholder-slate-400 focus:outline-none"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="text-slate-300 hover:text-slate-500 text-xs">✕</button>
+            )}
+          </div>
+
+          {/* From date */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              From
-            </label>
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">From</label>
             <input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
               max={toDate || undefined}
-              className={cn(
-                'px-3 py-2 rounded-lg border text-sm bg-white text-slate-900 border-slate-200',
-                'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
-                'transition-colors'
-              )}
+              className={inputClass}
             />
           </div>
+
+          {/* To date */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              To
-            </label>
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">To</label>
             <input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
               min={fromDate || undefined}
-              className={cn(
-                'px-3 py-2 rounded-lg border text-sm bg-white text-slate-900 border-slate-200',
-                'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
-                'transition-colors'
-              )}
+              className={inputClass}
             />
           </div>
+
+          {/* Clear all */}
           {hasFilter && (
             <button
-              onClick={clearFilter}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                'text-slate-500 hover:text-red-600 hover:bg-red-50 border border-slate-200 bg-white',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
-              )}
+              onClick={clearAll}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 border border-slate-200 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
               Clear
@@ -178,6 +182,7 @@ export default function LogsPage() {
           )}
         </div>
 
+        {/* Table */}
         {loading && logs.length === 0 ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (

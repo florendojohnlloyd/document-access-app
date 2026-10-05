@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, FolderOpen } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Modal } from './Modal';
 import type { Folder } from '@/types';
@@ -30,6 +30,8 @@ export function FolderChips({
   onFolderDeleted,
 }: FolderChipsProps) {
   const canDeleteFolders = canDelete ?? isManager;
+  const showActions = isManager || canDeleteFolders;
+
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [targetFolder, setTargetFolder] = useState<Folder | null>(null);
   const [error, setError] = useState('');
@@ -62,7 +64,7 @@ export function FolderChips({
       const res = await fetch(`/api/folders?id=${targetFolder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
+body: JSON.stringify({ name: name.trim() }),
       });
       const data = await res.json() as Folder | { error: string };
       if (!res.ok || 'error' in data) {
@@ -97,87 +99,104 @@ export function FolderChips({
   };
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2 flex-nowrap">
+    <div className="flex items-center gap-1.5 flex-wrap">
       {/* All chip */}
       <button
         onClick={() => onSelect(null)}
         className={cn(
-          'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-colors',
+          'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex-shrink-0',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
           selectedId === null
-            ? 'bg-indigo-600 text-white shadow-sm'
-            : 'bg-slate-100 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            ? 'bg-indigo-600 text-white'
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
         )}
       >
-        <FolderOpen className="w-3.5 h-3.5" />
         All
       </button>
 
       {/* Folder chips */}
-      {folders.map((folder) => (
-        <div key={folder.id} className="flex items-center gap-1 flex-shrink-0 group">
-          <button
-            onClick={() => onSelect(folder.id)}
-            className={cn(
-              'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-              selectedId === folder.id
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-100 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+      {folders.map((folder) => {
+        const isSelected = selectedId === folder.id;
+        return (
+          <div key={folder.id} className="group relative flex-shrink-0">
+            <button
+              onClick={() => onSelect(folder.id)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full text-xs font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                // Extra right padding when actions are shown, to make room
+                showActions ? 'pl-3 pr-8 py-1.5' : 'px-3 py-1.5',
+                isSelected
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              )}
+            >
+              {folder.name}
+            </button>
+
+            {/* Inline action buttons — absolutely positioned inside the chip */}
+            {showActions && (
+              <div className={cn(
+                'absolute right-1.5 top-1/2 -translate-y-1/2',
+                'flex items-center gap-0.5',
+                'opacity-0 group-hover:opacity-100 transition-opacity'
+              )}>
+                {isManager && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTargetFolder(folder);
+                      setError('');
+                      setModalMode('rename');
+                    }}
+                    className={cn(
+                      'p-0.5 rounded-full transition-colors',
+                      isSelected
+                        ? 'text-white/70 hover:text-white hover:bg-white/20'
+                        : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-100'
+                    )}
+                    aria-label={`Rename ${folder.name}`}
+                  >
+                    <Pencil className="w-2.5 h-2.5" />
+                  </button>
+                )}
+                {canDeleteFolders && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTargetFolder(folder);
+                      setError('');
+                      setModalMode('delete');
+                    }}
+                    className={cn(
+                      'p-0.5 rounded-full transition-colors',
+                      isSelected
+                        ? 'text-white/70 hover:text-white hover:bg-white/20'
+                        : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                    )}
+                    aria-label={`Delete ${folder.name}`}
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                  </button>
+                )}
+              </div>
             )}
-          >
-            {folder.name}
-          </button>
+          </div>
+        );
+      })}
 
-          {/* Folder actions — rename for managers, delete for managers and admins */}
-          {(isManager || canDeleteFolders) && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              {isManager && (
-                <button
-                  onClick={() => {
-                    setTargetFolder(folder);
-                    setError('');
-                    setModalMode('rename');
-                  }}
-                  className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-colors"
-                  aria-label={`Rename folder ${folder.name}`}
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-              )}
-              {canDeleteFolders && (
-                <button
-                  onClick={() => {
-                    setTargetFolder(folder);
-                    setError('');
-                    setModalMode('delete');
-                  }}
-                  className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  aria-label={`Delete folder ${folder.name}`}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* Add folder button */}
+      {/* New Folder button — super_admin only */}
       {isManager && (
         <button
-          onClick={() => {
-            setError('');
-            setModalMode('create');
-          }}
+          onClick={() => { setError(''); setModalMode('create'); }}
           className={cn(
-            'flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium flex-shrink-0',
-            'border-2 border-dashed border-slate-200',
-            'text-slate-500 hover:border-indigo-500 hover:text-indigo-600',
+            'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0',
+            'border border-dashed border-slate-300',
+            'text-slate-400 hover:border-indigo-400 hover:text-indigo-600',
             'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500'
           )}
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-3 h-3" />
           New Folder
         </button>
       )}
@@ -193,7 +212,6 @@ export function FolderChips({
           onClose={() => setModalMode(null)}
         />
       )}
-
       {modalMode === 'rename' && targetFolder && (
         <Modal
           title="Rename Folder"
@@ -204,11 +222,10 @@ export function FolderChips({
           onClose={() => { setModalMode(null); setTargetFolder(null); }}
         />
       )}
-
       {modalMode === 'delete' && targetFolder && (
         <Modal
           title="Delete Folder"
-          message={`Are you sure you want to delete the folder "${targetFolder.name}"? This cannot be undone.`}
+          message={`Delete folder "${targetFolder.name}"? This cannot be undone.`}
           confirmLabel="Delete"
           danger
           onConfirm={handleDelete}
@@ -217,14 +234,11 @@ export function FolderChips({
       )}
 
       {error && (
-        <div className="fixed bottom-4 right-4 z-50 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 shadow-lg">
-          <p className="text-red-400 text-sm">{error}</p>
-          <button onClick={() => setError('')} className="text-xs text-red-400 underline mt-1">
-            Dismiss
-          </button>
+        <div className="fixed bottom-4 right-4 z-50 bg-red-50 border border-red-200 rounded-lg px-4 py-3 shadow-lg">
+          <p className="text-red-600 text-sm">{error}</p>
+          <button onClick={() => setError('')} className="text-xs text-red-400 underline mt-1">Dismiss</button>
         </div>
       )}
     </div>
   );
 }
-

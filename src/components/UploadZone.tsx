@@ -53,7 +53,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
     if (!selectedFile) return;
     // Require folder selection
     if (!selectedFolderId) {
-      setError('Pumili muna ng folder bago mag-upload.');
+      setError('Please select a folder before uploading.');
       return;
     }
     setError('');
@@ -160,7 +160,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
           )}
           aria-label="Select folder"
         >
-          <option value="" disabled>— Pumili ng folder —</option>
+          <option value="" disabled>— Select a folder —</option>
           {folders.map((f) => (
             <option key={f.id} value={f.id}>{f.name}</option>
           ))}

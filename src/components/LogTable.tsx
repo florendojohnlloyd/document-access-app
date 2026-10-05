@@ -77,7 +77,7 @@ export function LogTable({ logs }: LogTableProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <ClipboardList className="w-10 h-10 text-slate-500  mb-2" />
-        <p className="text-slate-500 ">Walang logs pa.</p>
+        <p className="text-slate-500 ">No audit logs yet.</p>
       </div>
     );
   }

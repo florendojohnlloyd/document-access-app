@@ -164,7 +164,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
               <div className="text-center">
                 <p className="text-slate-700 font-medium text-sm">{fileName}</p>
                 <p className="text-slate-400 text-xs mt-1">
-                  Hindi ma-preview ang file na ito sa browser.
+                  This file cannot be previewed in the browser.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -175,7 +175,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  Buksan sa bagong tab
+                  Open in new tab
                 </a>
                 <a
                   href={url}
@@ -183,7 +183,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                 >
                   <Download className="w-4 h-4" />
-                  I-download
+                  Download
                 </a>
               </div>
             </div>

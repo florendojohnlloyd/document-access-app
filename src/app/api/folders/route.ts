@@ -148,7 +148,7 @@ export async function DELETE(request: NextRequest) {
 
     if (count && count > 0) {
       return NextResponse.json(
-        { error: 'Hindi mabubura ang folder na may laman na files. Burahin muna ang mga files.' },
+        { error: 'Cannot delete a folder that contains files. Delete the files first.' },
         { status: 409 }
       );
     }

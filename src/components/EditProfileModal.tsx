@@ -127,9 +127,9 @@ export function EditProfileModal({ profile, onSaved, onClose }: EditProfileModal
               <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full',
               profile.role === 'super_admin' ? 'bg-amber-100 text-amber-600' :
               profile.role === 'admin' ? 'bg-purple-100 text-purple-600' :
-              'bg-blue-100 text-blue-600'
+              'bg-slate-100 text-slate-500'
             )}>
-              {profile.role === 'super_admin' ? '⭐ Super Admin' : profile.role === 'admin' ? '🛡 Admin' : 'User'}
+              {profile.role === 'super_admin' ? '⭐ Super Admin' : profile.role === 'admin' ? '🛡 Admin' : 'View Only'}
             </span>
             </div>
           </div>

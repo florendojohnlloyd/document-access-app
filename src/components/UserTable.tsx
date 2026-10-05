@@ -16,7 +16,7 @@ interface UserTableProps {
 function RoleBadge({ role }: { role: Role }) {
   if (role === 'super_admin') {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-600 dark:text-yellow-300">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-600">
         <ShieldCheck className="w-3 h-3" />
         Super Admin
       </span>
@@ -24,16 +24,16 @@ function RoleBadge({ role }: { role: Role }) {
   }
   if (role === 'admin') {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
         <Shield className="w-3 h-3" />
         Admin
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-600/10 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
       <User className="w-3 h-3" />
-      User
+      View Only
     </span>
   );
 }

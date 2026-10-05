@@ -28,6 +28,17 @@ export async function POST(request: NextRequest) {
 
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // admin and super_admin can upload; user is view-only
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, username')
+      .eq('id', session.user.id)
+      .single();
+
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden. Admins and Super Admins only.' }, { status: 403 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const folderId = formData.get('folder_id') as string | null;
@@ -99,16 +110,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: dbError.message }, { status: 500 });
     }
 
-    // Get profile for audit log
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', session.user.id)
-      .single();
-
+    // Get profile for audit log (already fetched above)
     await supabase.from('audit_logs').insert({
       actor_id: session.user.id,
-      actor_name: profile?.username ?? null,
+      actor_name: profile.username ?? null,
       action: 'UPLOAD',
       detail: `File "${file.name}" uploaded to folder "${folderName}".`,
     });

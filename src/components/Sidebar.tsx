@@ -21,7 +21,7 @@ const navItems = [
 function RoleLabel({ role }: { role: Role }) {
   if (role === 'super_admin') return <span className="text-xs font-semibold text-amber-500">⭐ Super Admin</span>;
   if (role === 'admin') return <span className="text-xs font-semibold text-purple-500">🛡 Admin</span>;
-  return <span className="text-xs font-semibold text-blue-500">User</span>;
+  return <span className="text-xs font-semibold text-slate-400">View Only</span>;
 }
 
 export function Sidebar({ profile, isOpen, onClose }: SidebarProps) {

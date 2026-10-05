@@ -48,15 +48,19 @@ export default function FilesPage() {
   useEffect(() => { void fetchFiles(); }, [fetchFiles]);
 
   const isSuperAdmin = profile?.role === 'super_admin';
-  const canDeleteFolders = profile?.role === 'super_admin' || profile?.role === 'admin';
+  const canUpload = profile?.role === 'super_admin' || profile?.role === 'admin';
+  // Only super_admin can delete/rename folders; admin can only upload
+  const canDeleteFolders = profile?.role === 'super_admin';
 
   return (
     <div className="space-y-4">
-      {/* Upload zone */}
-      <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
-        <UploadZone folders={folders} onUploaded={() => void fetchFiles()} />
-      </div>
+      {/* Upload zone — admin and super_admin only */}
+      {canUpload && (
+        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
+          <UploadZone folders={folders} onUploaded={() => void fetchFiles()} />
+        </div>
+      )}
 
       {/* Files card */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">

@@ -106,8 +106,8 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
             onChange={(e) => setRole(e.target.value as Role)}
             className={inputClass}
           >
-            <option value="user">User (View &amp; Upload)</option>
-            <option value="admin">Admin (View Only)</option>
+            <option value="user">User (View Only)</option>
+            <option value="admin">Admin (View &amp; Upload)</option>
             <option value="super_admin">Super Admin (Full Access)</option>
           </select>
         </div>

@@ -48,19 +48,17 @@ export default function FilesPage() {
   useEffect(() => { void fetchFiles(); }, [fetchFiles]);
 
   const isSuperAdmin = profile?.role === 'super_admin';
-  const canUpload = profile?.role === 'super_admin' || profile?.role === 'admin';
-  // Only super_admin can delete/rename folders; admin can only upload
+  // admin and super_admin can delete/rename files; user can only view+upload
+  const canDelete = profile?.role === 'super_admin' || profile?.role === 'admin';
   const canDeleteFolders = profile?.role === 'super_admin';
 
   return (
     <div className="space-y-4">
-      {/* Upload zone — admin and super_admin only */}
-      {canUpload && (
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
-          <UploadZone folders={folders} onUploaded={() => void fetchFiles()} />
-        </div>
-      )}
+      {/* Upload zone — all roles */}
+      <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
+        <UploadZone folders={folders} onUploaded={() => void fetchFiles()} />
+      </div>
 
       {/* Files card */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -89,6 +87,7 @@ export default function FilesPage() {
         <FileTable
           files={files}
           isManager={isSuperAdmin}
+          canDelete={canDelete}
           onFileRenamed={(updated) =>
             setFiles((prev) => prev.map((f) => (f.id === updated.id ? { ...f, name: updated.name } : f)))
           }

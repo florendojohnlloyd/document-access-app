@@ -28,15 +28,15 @@ export async function POST(request: NextRequest) {
 
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // admin and super_admin can upload; user is view-only
+    // All authenticated users can upload (user, admin, super_admin)
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, username')
       .eq('id', session.user.id)
       .single();
 
-    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden. Admins and Super Admins only.' }, { status: 403 });
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found.' }, { status: 403 });
     }
 
     const formData = await request.formData();

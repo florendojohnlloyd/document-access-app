@@ -129,7 +129,7 @@ export function EditProfileModal({ profile, onSaved, onClose }: EditProfileModal
               profile.role === 'admin' ? 'bg-purple-100 text-purple-600' :
               'bg-slate-100 text-slate-500'
             )}>
-              {profile.role === 'super_admin' ? '⭐ Super Admin' : profile.role === 'admin' ? '🛡 Admin' : 'View Only'}
+              {profile.role === 'super_admin' ? '⭐ Super Admin' : profile.role === 'admin' ? '🛡 Admin' : 'User'}
             </span>
             </div>
           </div>

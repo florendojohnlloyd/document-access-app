@@ -69,7 +69,7 @@ export function Header({ profile, sidebarOpen, onToggleSidebar, onProfileUpdated
                 profile.role === 'admin' ? 'text-purple-500' :
                 'text-slate-400'
               )}>
-                {profile.role === 'super_admin' ? 'Super Admin' : profile.role === 'admin' ? 'Admin' : 'View Only'}
+                {profile.role === 'super_admin' ? 'Super Admin' : profile.role === 'admin' ? 'Admin' : 'User'}
               </p>
             </div>
             <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 hidden sm:block transition-colors" />

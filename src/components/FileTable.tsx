@@ -12,6 +12,7 @@ import type { FileRecord } from '@/types';
 interface FileTableProps {
   files: FileRecord[];
   isManager: boolean;
+  canDelete?: boolean;
   onFileRenamed: (file: FileRecord) => void;
   onFileDeleted: (id: string) => void;
   isLoading?: boolean;
@@ -31,10 +32,14 @@ type ModalMode = 'rename' | 'delete' | null;
 export function FileTable({
   files,
   isManager,
+  canDelete,
   onFileRenamed,
   onFileDeleted,
   isLoading,
 }: FileTableProps) {
+  // super_admin=isManager can rename+delete, admin can delete only, user can neither
+  const showRename = isManager;
+  const showDelete = isManager || (canDelete ?? false);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [targetFile, setTargetFile] = useState<FileRecord | null>(null);
   const [viewFileId, setViewFileId] = useState<string | null>(null);
@@ -179,39 +184,39 @@ export function FileTable({
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                    {isManager && (
-                      <>
-                        <button
-                          onClick={() => {
-                            setTargetFile(file);
-                            setError('');
-                            setModalMode('rename');
-                          }}
-                          className={cn(
-                            'p-1.5 rounded-lg transition-colors',
-                            'text-gray-400 hover:text-blue-500 hover:bg-blue-600/10 dark:hover:bg-blue-900/20',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
-                          )}
-                          aria-label={`Rename ${file.name}`}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setTargetFile(file);
-                            setError('');
-                            setModalMode('delete');
-                          }}
-                          className={cn(
-                            'p-1.5 rounded-lg transition-colors',
-                            'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
-                          )}
-                          aria-label={`Delete ${file.name}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
+                    {showRename && (
+                      <button
+                        onClick={() => {
+                          setTargetFile(file);
+                          setError('');
+                          setModalMode('rename');
+                        }}
+                        className={cn(
+                          'p-1.5 rounded-lg transition-colors',
+                          'text-gray-400 hover:text-blue-500 hover:bg-blue-600/10',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+                        )}
+                        aria-label={`Rename ${file.name}`}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
+                    {showDelete && (
+                      <button
+                        onClick={() => {
+                          setTargetFile(file);
+                          setError('');
+                          setModalMode('delete');
+                        }}
+                        className={cn(
+                          'p-1.5 rounded-lg transition-colors',
+                          'text-gray-400 hover:text-red-500 hover:bg-red-50',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
+                        )}
+                        aria-label={`Delete ${file.name}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     )}
                   </div>
                 </td>

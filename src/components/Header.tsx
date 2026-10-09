@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { LogOut, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EditProfileModal } from './EditProfileModal';
+import { UpdateNoticeBell } from './UpdateNoticeModal';
 import type { Profile } from '@/types';
 
 interface HeaderProps {
@@ -53,6 +54,11 @@ export function Header({ profile, sidebarOpen, onToggleSidebar, onProfileUpdated
 
         {/* Right — user + actions */}
         <div className="flex items-center gap-1">
+          {/* Update notice bell */}
+          <UpdateNoticeBell />
+
+          <div className="w-px h-5 bg-slate-200 mx-1" />
+
           {/* Clickable user avatar — opens profile modal */}
           <button
             onClick={() => setShowProfile(true)}

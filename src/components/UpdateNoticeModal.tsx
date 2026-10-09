@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ─── EDIT THIS to publish a new notice ────────────────────────────────────────
-// Bump the version string whenever you want a new popup to appear.
-// Users who already dismissed this version won't see it again.
+// Bump NOTICE_VERSION whenever you want users to see the dot again.
 const NOTICE_VERSION = '1.1.0';
 
 const NOTICE = {
   title: 'DocuVault Updated 🎉',
   version: NOTICE_VERSION,
+  date: 'October 2026',
   items: [
     'New role system: Super Admin, Admin, and User',
     'Folder dropdown with search',
+    'Admin can now create and delete folders',
     'Date range + keyword filter on Audit Logs',
     'Search bar on Users page',
     'Improved file preview for Office documents',
@@ -22,79 +23,101 @@ const NOTICE = {
 };
 // ──────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = `docuvault_notice_dismissed_${NOTICE_VERSION}`;
+const STORAGE_KEY = `docuvault_notice_read_${NOTICE_VERSION}`;
 
-export function UpdateNoticeModal() {
-  const [visible, setVisible] = useState(false);
+export function UpdateNoticeBell() {
+  const [read, setRead] = useState(true); // default true to avoid flash
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (!dismissed) setVisible(true);
+    const isRead = localStorage.getItem(STORAGE_KEY);
+    if (!isRead) setRead(false);
   }, []);
 
-  const dismiss = () => {
-    localStorage.setItem(STORAGE_KEY, '1');
-    setVisible(false);
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleOpen = () => {
+    setOpen((v) => !v);
+    if (!read) {
+      setRead(true);
+      localStorage.setItem(STORAGE_KEY, '1');
+    }
   };
 
-  if (!visible) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && dismiss()}
-    >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">{NOTICE.title}</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Version {NOTICE.version}</p>
-            </div>
-          </div>
-          <button
-            onClick={dismiss}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <div ref={ref} className="relative">
+      {/* Bell button */}
+      <button
+        onClick={handleOpen}
+        className={cn(
+          'relative p-2 rounded-lg transition-colors',
+          'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+          open && 'bg-indigo-50 text-indigo-600'
+        )}
+        aria-label="Updates"
+      >
+        <Bell className="w-4 h-4" />
+        {/* Unread dot */}
+        {!read && (
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+        )}
+      </button>
 
-        {/* Body */}
-        <div className="px-6 pb-6">
-          <p className="text-sm text-slate-500 mb-4">
-            Narito ang mga bagong feature at improvement sa pinakabagong update:
-          </p>
-          <ul className="space-y-2.5">
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{NOTICE.title}</p>
+                <p className="text-xs text-slate-400">v{NOTICE.version} · {NOTICE.date}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Items */}
+          <ul className="px-4 py-3 space-y-2.5">
             {NOTICE.items.map((item, i) => (
               <li key={i} className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                <span className="w-4 h-4 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span className="text-sm text-slate-700">{item}</span>
+                <span className="text-xs text-slate-600">{item}</span>
               </li>
             ))}
           </ul>
 
-          <button
-            onClick={dismiss}
-            className={cn(
-              'mt-6 w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors',
-              'bg-indigo-600 hover:bg-indigo-700 text-white',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500'
-            )}
-          >
-            Got it, thanks!
-          </button>
+          <div className="px-4 pb-3">
+            <p className="text-xs text-slate-400 text-center">
+              You're on the latest version
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

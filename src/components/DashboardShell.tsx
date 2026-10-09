@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { SetNameModal } from './SetNameModal';
-import { UpdateNoticeModal } from './UpdateNoticeModal';
 import type { Profile } from '@/types';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -53,7 +52,6 @@ export function DashboardShell({ profile: initialProfile, children }: { profile:
       </div>
 
       {needsName && <SetNameModal onSaved={(p) => setProfile(p)} />}
-      <UpdateNoticeModal />
     </div>
   );
 }

@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const profile = await getProfile(supabase, session.user.id);
-    if (!profile || profile.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden. Super Admins only.' }, { status: 403 });
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
     const body = await request.json() as { name?: string };
@@ -132,8 +132,8 @@ export async function DELETE(request: NextRequest) {
 
     const profile = await getProfile(supabase, session.user.id);
     // Only super_admin can delete folders
-    if (!profile || profile.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden. Super Admins only.' }, { status: 403 });
+    if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

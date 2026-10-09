@@ -10,6 +10,7 @@ interface UserTableProps {
   users: Profile[];
   currentUserId: string;
   currentUserRole: Role;
+  currentUsername: string;
   onDeleted: (id: string) => void;
 }
 
@@ -38,11 +39,13 @@ function RoleBadge({ role }: { role: Role }) {
   );
 }
 
-export function UserTable({ users, currentUserId, currentUserRole, onDeleted }: UserTableProps) {
+export function UserTable({ users, currentUserId, currentUserRole, currentUsername, onDeleted }: UserTableProps) {
   const [target, setTarget] = useState<Profile | null>(null);
   const [error, setError] = useState('');
 
   const canDelete = currentUserRole === 'super_admin';
+  // Only 'manager' (Angelica) can delete other super_admin accounts
+  const canDeleteSuperAdmin = currentUserRole === 'super_admin' && currentUsername === 'manager';
 
   const handleDelete = async () => {
     if (!target) return;
@@ -125,7 +128,7 @@ export function UserTable({ users, currentUserId, currentUserRole, onDeleted }: 
                 {canDelete && (
                   <td className="py-3 px-4">
                     <div className="flex justify-end">
-                      {user.id !== currentUserId && user.role !== 'super_admin' && (
+                      {user.id !== currentUserId && (user.role !== 'super_admin' || canDeleteSuperAdmin) && (
                         <button
                           onClick={() => { setTarget(user); setError(''); }}
                           className={cn(

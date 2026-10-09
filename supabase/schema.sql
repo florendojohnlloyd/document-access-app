@@ -77,7 +77,7 @@ CREATE POLICY "Managers can create folders"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'super_admin'
+      WHERE id = auth.uid() AND role IN ('super_admin', 'admin')
     )
   );
 
@@ -100,7 +100,6 @@ CREATE POLICY "Managers can delete folders"
       WHERE id = auth.uid() AND role IN ('super_admin', 'admin')
     )
   );
-
 -- ============================================================
 -- 3. FILES TABLE
 -- ============================================================

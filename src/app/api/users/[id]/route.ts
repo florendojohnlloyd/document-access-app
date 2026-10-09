@@ -41,8 +41,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
 
-    // Prevent deleting other super_admins
-    if (targetProfile.role === 'super_admin') {
+    // Prevent deleting other super_admins — only the 'manager' account (Angelica) can do this
+    if (targetProfile.role === 'super_admin' && actorProfile.username !== 'manager') {
       return NextResponse.json({ error: 'Hindi mabubura ang isang Super Admin account.' }, { status: 403 });
     }
 

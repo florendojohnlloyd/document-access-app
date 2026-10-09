@@ -50,7 +50,8 @@ export default function FilesPage() {
   const isSuperAdmin = profile?.role === 'super_admin';
   // admin and super_admin can delete/rename files; user can only view+upload
   const canDelete = profile?.role === 'super_admin' || profile?.role === 'admin';
-  const canDeleteFolders = profile?.role === 'super_admin';
+  // admin and super_admin can create/delete folders
+  const canManageFolders = profile?.role === 'super_admin' || profile?.role === 'admin';
 
   return (
     <div className="space-y-4">
@@ -68,8 +69,8 @@ export default function FilesPage() {
             folders={folders}
             selectedId={selectedFolderId}
             onSelect={setSelectedFolderId}
-            isManager={isSuperAdmin}
-            canDelete={canDeleteFolders}
+            isManager={canManageFolders}
+            canDelete={canManageFolders}
             onFolderCreated={(folder) => setFolders((prev) => [...prev, folder])}
             onFolderRenamed={(updated) =>
               setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))

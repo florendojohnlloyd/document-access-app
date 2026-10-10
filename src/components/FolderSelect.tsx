@@ -1,23 +1,41 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Search, FolderOpen, Plus, Pencil, Trash2, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search, FolderOpen, Folder, Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Modal } from './Modal';
-import type { Folder } from '@/types';
+import type { Folder as FolderType } from '@/types';
 
 interface FolderSelectProps {
-  folders: Folder[];
+  folders: FolderType[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
-  isManager: boolean;
+  isManager: boolean;   // can create/delete folders
   canDelete?: boolean;
-  onFolderCreated: (folder: Folder) => void;
-  onFolderRenamed: (folder: Folder) => void;
+  onFolderCreated: (folder: FolderType) => void;
+  onFolderRenamed: (folder: FolderType) => void;
   onFolderDeleted: (id: string) => void;
 }
 
-type ModalMode = 'create' | 'rename' | 'delete' | null;
+type ModalMode = 'create' | 'create-sub' | 'rename' | 'delete' | null;
+
+// Build tree from flat list
+function buildTree(folders: FolderType[]): FolderType[] {
+  const map = new Map<string, FolderType>();
+  const roots: FolderType[] = [];
+
+  folders.forEach((f) => map.set(f.id, { ...f, subfolders: [] }));
+  map.forEach((f) => {
+    if (f.parent_folder_id) {
+      const parent = map.get(f.parent_folder_id);
+      if (parent) parent.subfolders = [...(parent.subfolders ?? []), f];
+    } else {
+      roots.push(f);
+    }
+  });
+
+  return roots;
+}
 
 export function FolderSelect({
   folders,
@@ -32,54 +50,71 @@ export function FolderSelect({
   const canDeleteFolders = canDelete ?? isManager;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [modalMode, setModalMode] = useState<ModalMode>(null);
-  const [targetFolder, setTargetFolder] = useState<Folder | null>(null);
+  const [targetFolder, setTargetFolder] = useState<FolderType | null>(null);
   const [error, setError] = useState('');
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const tree = buildTree(folders);
+
+  // Flatten for search
+  const allFolders = folders;
+  const filtered = search
+    ? allFolders.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+    : null;
+
   const selectedFolder = folders.find((f) => f.id === selectedId) ?? null;
 
-  const filtered = folders.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch('');
+        setOpen(false); setSearch('');
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Focus search when opened
   useEffect(() => {
     if (open) setTimeout(() => searchRef.current?.focus(), 50);
   }, [open]);
 
   const handleSelect = (id: string | null) => {
-    onSelect(id);
-    setOpen(false);
-    setSearch('');
+    onSelect(id); setOpen(false); setSearch('');
+  };
+
+  const toggleExpand = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
   const handleCreate = async (name?: string) => {
     if (!name?.trim()) return;
     setError('');
     try {
+      const body = modalMode === 'create-sub' && targetFolder
+        ? { name: name.trim(), parent_folder_id: targetFolder.id }
+        : { name: name.trim(), parent_folder_id: null };
+
       const res = await fetch('/api/folders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify(body),
       });
-      const data = await res.json() as Folder | { error: string };
+      const data = await res.json() as FolderType | { error: string };
       if (!res.ok || 'error' in data) { setError(('error' in data ? data.error : null) ?? 'Error'); return; }
-      onFolderCreated(data as Folder);
-      setModalMode(null);
+      onFolderCreated(data as FolderType);
+      // Auto-expand parent when subfolder is created
+      if (modalMode === 'create-sub' && targetFolder) {
+        setExpanded((prev) => new Set([...prev, targetFolder.id]));
+      }
+      setModalMode(null); setTargetFolder(null);
     } catch { setError('Network error.'); }
   };
 
@@ -92,9 +127,9 @@ export function FolderSelect({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim() }),
       });
-      const data = await res.json() as Folder | { error: string };
+      const data = await res.json() as FolderType | { error: string };
       if (!res.ok || 'error' in data) { setError(('error' in data ? data.error : null) ?? 'Error'); return; }
-      onFolderRenamed(data as Folder);
+      onFolderRenamed(data as FolderType);
       setModalMode(null); setTargetFolder(null);
     } catch { setError('Network error.'); }
   };
@@ -110,6 +145,99 @@ export function FolderSelect({
       if (selectedId === targetFolder.id) onSelect(null);
       setModalMode(null); setTargetFolder(null);
     } catch { setError('Network error.'); }
+  };
+
+  const FolderItem = ({ folder, depth = 0 }: { folder: FolderType; depth?: number }) => {
+    const isSelected = selectedId === folder.id;
+    const hasSubs = (folder.subfolders?.length ?? 0) > 0;
+    const isExpanded = expanded.has(folder.id);
+
+    return (
+      <>
+        <li>
+          <div
+            className={cn(
+              'group flex items-center gap-1 pr-2 transition-colors',
+              isSelected ? 'bg-indigo-50' : 'hover:bg-slate-50'
+            )}
+            style={{ paddingLeft: `${8 + depth * 16}px` }}
+          >
+            {/* Expand toggle */}
+            <button
+              onClick={(e) => hasSubs ? toggleExpand(folder.id, e) : e.stopPropagation()}
+              className={cn(
+                'w-5 h-5 flex items-center justify-center flex-shrink-0 rounded transition-colors',
+                hasSubs ? 'text-slate-400 hover:text-slate-600' : 'text-transparent cursor-default'
+              )}
+              tabIndex={-1}
+            >
+              {hasSubs
+                ? isExpanded
+                  ? <ChevronDown className="w-3 h-3" />
+                  : <ChevronRight className="w-3 h-3" />
+                : <span className="w-3 h-3" />}
+            </button>
+
+            {/* Folder button */}
+            <button
+              onClick={() => handleSelect(folder.id)}
+              className="flex-1 flex items-center gap-2 py-2 text-sm text-left min-w-0"
+              role="option"
+              aria-selected={isSelected}
+            >
+              {hasSubs && isExpanded
+                ? <FolderOpen className={cn('w-4 h-4 flex-shrink-0', isSelected ? 'text-indigo-500' : 'text-slate-400')} />
+                : <Folder className={cn('w-4 h-4 flex-shrink-0', isSelected ? 'text-indigo-500' : 'text-slate-400')} />
+              }
+              <span className={cn('truncate flex-1', isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700')}>
+                {folder.name}
+              </span>
+              {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />}
+            </button>
+
+            {/* Actions */}
+            {(isManager || canDeleteFolders) && (
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                {/* Add subfolder — only for root folders (depth=0) */}
+                {isManager && depth === 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTargetFolder(folder); setModalMode('create-sub'); setOpen(false); }}
+                    className="p-1 rounded text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    aria-label={`Add subfolder to ${folder.name}`}
+                    title="Add sub-folder"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                )}
+                {isManager && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTargetFolder(folder); setModalMode('rename'); setOpen(false); }}
+                    className="p-1 rounded text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    aria-label={`Rename ${folder.name}`}
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                )}
+                {canDeleteFolders && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTargetFolder(folder); setModalMode('delete'); setOpen(false); }}
+                    className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    aria-label={`Delete ${folder.name}`}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </li>
+
+        {/* Subfolders */}
+        {hasSubs && isExpanded && folder.subfolders!.map((sub) => (
+          <FolderItem key={sub.id} folder={sub} depth={depth + 1} />
+        ))}
+      </>
+    );
   };
 
   return (
@@ -139,7 +267,7 @@ export function FolderSelect({
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] z-30 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+          <div className="absolute top-full left-0 mt-1 w-64 z-30 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
             {/* Search */}
             <div className="p-2 border-b border-slate-100">
               <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
@@ -155,20 +283,15 @@ export function FolderSelect({
               </div>
             </div>
 
-            {/* Options */}
-            <ul className="max-h-52 overflow-y-auto py-1" role="listbox">
-              {/* All Files option */}
+            <ul className="max-h-64 overflow-y-auto py-1" role="listbox">
+              {/* All Files */}
               <li>
                 <button
                   onClick={() => handleSelect(null)}
                   className={cn(
                     'w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left',
-                    selectedId === null
-                      ? 'bg-indigo-50 text-indigo-700 font-medium'
-                      : 'text-slate-700 hover:bg-slate-50'
+                    selectedId === null ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700 hover:bg-slate-50'
                   )}
-                  role="option"
-                  aria-selected={selectedId === null}
                 >
                   <FolderOpen className="w-4 h-4 flex-shrink-0 text-slate-400" />
                   <span className="flex-1">All Files</span>
@@ -176,68 +299,40 @@ export function FolderSelect({
                 </button>
               </li>
 
-              {/* Folder options */}
-              {filtered.length === 0 && search && (
+              {/* Flat search results */}
+              {search && filtered?.length === 0 && (
                 <li className="px-3 py-3 text-xs text-slate-400 text-center">No folders found</li>
               )}
-              {filtered.map((folder) => (
+              {search && filtered?.map((folder) => (
                 <li key={folder.id}>
-                  <div className={cn(
-                    'group flex items-center gap-2 px-3 py-2 transition-colors',
-                    selectedId === folder.id ? 'bg-indigo-50' : 'hover:bg-slate-50'
-                  )}>
-                    <button
-                      onClick={() => handleSelect(folder.id)}
-                      className="flex-1 flex items-center gap-2 text-sm text-left"
-                      role="option"
-                      aria-selected={selectedId === folder.id}
-                    >
-                      <FolderOpen className={cn(
-                        'w-4 h-4 flex-shrink-0',
-                        selectedId === folder.id ? 'text-indigo-500' : 'text-slate-400'
-                      )} />
-                      <span className={cn(
-                        'flex-1 truncate',
-                        selectedId === folder.id ? 'text-indigo-700 font-medium' : 'text-slate-700'
-                      )}>
-                        {folder.name}
-                      </span>
-                      {selectedId === folder.id && <Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />}
-                    </button>
-
-                    {/* Folder actions */}
-                    {(isManager || canDeleteFolders) && (
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        {isManager && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setTargetFolder(folder); setModalMode('rename'); setOpen(false); }}
-                            className="p-1 rounded text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            aria-label={`Rename ${folder.name}`}
-                          >
-                            <Pencil className="w-3 h-3" />
-                          </button>
-                        )}
-                        {canDeleteFolders && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setTargetFolder(folder); setModalMode('delete'); setOpen(false); }}
-                            className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            aria-label={`Delete ${folder.name}`}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
+                  <button
+                    onClick={() => handleSelect(folder.id)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left',
+                      selectedId === folder.id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700 hover:bg-slate-50'
                     )}
-                  </div>
+                  >
+                    <Folder className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                    <span className="flex-1 truncate">{folder.name}</span>
+                    {folder.parent_folder_id && (
+                      <span className="text-xs text-slate-400 flex-shrink-0">sub</span>
+                    )}
+                    {selectedId === folder.id && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                  </button>
                 </li>
+              ))}
+
+              {/* Tree view */}
+              {!search && tree.map((folder) => (
+                <FolderItem key={folder.id} folder={folder} depth={0} />
               ))}
             </ul>
 
-            {/* New folder button */}
+            {/* New root folder button */}
             {isManager && (
               <div className="border-t border-slate-100 p-1.5">
                 <button
-                  onClick={() => { setOpen(false); setModalMode('create'); }}
+                  onClick={() => { setOpen(false); setTargetFolder(null); setModalMode('create'); }}
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -252,14 +347,24 @@ export function FolderSelect({
       {/* Modals */}
       {modalMode === 'create' && (
         <Modal title="Create Folder" inputLabel="Folder Name" defaultValue="" confirmLabel="Create"
-          onConfirm={handleCreate} onClose={() => setModalMode(null)} />
+          onConfirm={handleCreate} onClose={() => { setModalMode(null); setTargetFolder(null); }} />
+      )}
+      {modalMode === 'create-sub' && targetFolder && (
+        <Modal
+          title={`New Sub-folder in "${targetFolder.name}"`}
+          inputLabel="Sub-folder Name"
+          defaultValue=""
+          confirmLabel="Create"
+          onConfirm={handleCreate}
+          onClose={() => { setModalMode(null); setTargetFolder(null); }}
+        />
       )}
       {modalMode === 'rename' && targetFolder && (
         <Modal title="Rename Folder" inputLabel="New Name" defaultValue={targetFolder.name} confirmLabel="Rename"
           onConfirm={handleRename} onClose={() => { setModalMode(null); setTargetFolder(null); }} />
       )}
       {modalMode === 'delete' && targetFolder && (
-        <Modal title="Delete Folder" message={`Delete folder "${targetFolder.name}"?`} confirmLabel="Delete" danger
+        <Modal title="Delete Folder" message={`Delete "${targetFolder.name}"? This cannot be undone.`} confirmLabel="Delete" danger
           onConfirm={handleDelete} onClose={() => { setModalMode(null); setTargetFolder(null); }} />
       )}
 

@@ -57,11 +57,20 @@ CREATE POLICY "Service role can delete profiles"
 -- 2. FOLDERS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.folders (
-  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  name        text        UNIQUE NOT NULL,
-  created_by  uuid        REFERENCES public.profiles(id) ON DELETE SET NULL,
-  created_at  timestamptz NOT NULL DEFAULT now()
+  id                uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  name              text        NOT NULL,
+  parent_folder_id  uuid        REFERENCES public.folders(id) ON DELETE RESTRICT,
+  created_by        uuid        REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (name, parent_folder_id)
 );
+
+-- ============================================================
+-- MIGRATION: Run this in Supabase SQL Editor if upgrading existing DB
+-- ALTER TABLE public.folders ADD COLUMN IF NOT EXISTS parent_folder_id uuid REFERENCES public.folders(id) ON DELETE RESTRICT;
+-- ALTER TABLE public.folders DROP CONSTRAINT IF EXISTS folders_name_key;
+-- ALTER TABLE public.folders ADD CONSTRAINT folders_name_parent_unique UNIQUE (name, parent_folder_id);
+-- ============================================================
 
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 

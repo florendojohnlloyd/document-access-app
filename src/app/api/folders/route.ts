@@ -4,9 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function getSession() {
   const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
   return { supabase, session };
 }
 
@@ -15,16 +13,28 @@ async function getProfile(supabase: SupabaseClient, userId: string) {
   return data;
 }
 
-export async function GET() {
+// GET /api/folders — returns all folders (flat list, client builds tree)
+// GET /api/folders?parent_id=xxx — returns subfolders of a parent
+export async function GET(request: NextRequest) {
   try {
     const { supabase, session } = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: folders, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const parentId = searchParams.get('parent_id');
+
+    let query = supabase
       .from('folders')
       .select('*')
       .order('name');
 
+    if (parentId === 'root') {
+      query = query.is('parent_folder_id', null);
+    } else if (parentId) {
+      query = query.eq('parent_folder_id', parentId);
+    }
+
+    const { data: folders, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(folders);
   } catch {
@@ -32,6 +42,7 @@ export async function GET() {
   }
 }
 
+// POST /api/folders — create folder (optionally nested)
 export async function POST(request: NextRequest) {
   try {
     const { supabase, session } = await getSession();
@@ -42,16 +53,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
-    const body = await request.json() as { name?: string };
-    const { name } = body;
+    const body = await request.json() as { name?: string; parent_folder_id?: string | null };
+    const { name, parent_folder_id } = body;
 
     if (!name || name.trim().length === 0) {
       return NextResponse.json({ error: 'Folder name is required.' }, { status: 400 });
     }
 
+    // Only allow 2 levels deep (root → subfolder)
+    if (parent_folder_id) {
+      const { data: parent } = await supabase
+        .from('folders')
+        .select('parent_folder_id')
+        .eq('id', parent_folder_id)
+        .single();
+
+      if (parent?.parent_folder_id) {
+        return NextResponse.json(
+          { error: 'Maximum 2 levels of folders allowed.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const { data: folder, error } = await supabase
       .from('folders')
-      .insert({ name: name.trim(), created_by: session.user.id })
+      .insert({
+        name: name.trim(),
+        created_by: session.user.id,
+        parent_folder_id: parent_folder_id ?? null,
+      })
       .select()
       .single();
 
@@ -66,7 +97,9 @@ export async function POST(request: NextRequest) {
       actor_id: session.user.id,
       actor_name: profile.username,
       action: 'FOLDER_CREATE',
-      detail: `Folder "${name.trim()}" created.`,
+      detail: parent_folder_id
+        ? `Sub-folder "${name.trim()}" created.`
+        : `Folder "${name.trim()}" created.`,
     });
 
     return NextResponse.json(folder, { status: 201 });
@@ -75,6 +108,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PATCH /api/folders?id=xxx — rename folder (super_admin only)
 export async function PATCH(request: NextRequest) {
   try {
     const { supabase, session } = await getSession();
@@ -125,13 +159,13 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+// DELETE /api/folders?id=xxx — delete folder (admin + super_admin)
 export async function DELETE(request: NextRequest) {
   try {
     const { supabase, session } = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const profile = await getProfile(supabase, session.user.id);
-    // Only super_admin can delete folders
     if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
@@ -141,14 +175,27 @@ export async function DELETE(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'Folder ID is required.' }, { status: 400 });
 
     // Check if folder has files
-    const { count } = await supabase
+    const { count: fileCount } = await supabase
       .from('files')
       .select('id', { count: 'exact', head: true })
       .eq('folder_id', id);
 
-    if (count && count > 0) {
+    if (fileCount && fileCount > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete a folder that contains files. Delete the files first.' },
+        { error: 'Hindi mabubura ang folder na may laman na files. Burahin muna ang mga files.' },
+        { status: 409 }
+      );
+    }
+
+    // Check if folder has subfolders
+    const { count: subCount } = await supabase
+      .from('folders')
+      .select('id', { count: 'exact', head: true })
+      .eq('parent_folder_id', id);
+
+    if (subCount && subCount > 0) {
+      return NextResponse.json(
+        { error: 'Hindi mabubura ang folder na may sub-folder. Burahin muna ang mga sub-folder.' },
         { status: 409 }
       );
     }

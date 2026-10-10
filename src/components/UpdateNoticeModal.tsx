@@ -1,123 +1,131 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Bell, Sparkles, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Sparkles, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// ─── EDIT THIS to publish a new notice ────────────────────────────────────────
-// Bump NOTICE_VERSION whenever you want users to see the dot again.
-const NOTICE_VERSION = '1.1.0';
+// ─── EDIT THIS to publish a new notice ───────────────────────────────────────
+// Bump NOTICE_VERSION → all users will see the toast again on next login.
+const NOTICE_VERSION = '1.2.0';
 
 const NOTICE = {
-  title: 'DocuVault Updated 🎉',
+  title: 'DocuVault Updated',
   version: NOTICE_VERSION,
-  date: 'October 2026',
   items: [
-    'New role system: Super Admin, Admin, and User',
-    'Folder dropdown with search',
-    'Admin can now create and delete folders',
-    'Date range + keyword filter on Audit Logs',
-    'Search bar on Users page',
-    'Improved file preview for Office documents',
+    'Admin can now create & delete folders',
+    'Nested sub-folders support',
+    'Slide-in update notifications',
+    'Only manager can delete Super Admin accounts',
   ],
 };
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = `docuvault_notice_read_${NOTICE_VERSION}`;
+const STORAGE_KEY = `docuvault_notice_dismissed_${NOTICE_VERSION}`;
 
 export function UpdateNoticeBell() {
-  const [read, setRead] = useState(true); // default true to avoid flash
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  // Keep the bell component for backwards compat (used in Header)
+  return null;
+}
+
+export function UpdateNoticeToast() {
+  const [visible, setVisible] = useState(false);
+  const [hiding, setHiding] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const isRead = localStorage.getItem(STORAGE_KEY);
-    if (!isRead) setRead(false);
-  }, []);
-
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const handleOpen = () => {
-    setOpen((v) => !v);
-    if (!read) {
-      setRead(true);
-      localStorage.setItem(STORAGE_KEY, '1');
+    const dismissed = localStorage.getItem(STORAGE_KEY);
+    if (!dismissed) {
+      // Small delay so it feels like a push, not instant
+      const t = setTimeout(() => setVisible(true), 800);
+      return () => clearTimeout(t);
     }
+  }, []);
+
+  const dismiss = () => {
+    setHiding(true);
+    localStorage.setItem(STORAGE_KEY, '1');
+    setTimeout(() => setVisible(false), 300);
   };
 
-  return (
-    <div ref={ref} className="relative">
-      {/* Bell button */}
-      <button
-        onClick={handleOpen}
-        className={cn(
-          'relative p-2 rounded-lg transition-colors',
-          'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-          open && 'bg-indigo-50 text-indigo-600'
-        )}
-        aria-label="Updates"
-      >
-        <Bell className="w-4 h-4" />
-        {/* Unread dot */}
-        {!read && (
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
-        )}
-      </button>
+  const handleRefresh = () => {
+    setRefreshing(true);
+    localStorage.setItem(STORAGE_KEY, '1');
+    setTimeout(() => window.location.reload(), 400);
+  };
 
-      {/* Dropdown panel */}
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+  if (!visible) return null;
+
+  return (
+    <div
+      className={cn(
+        'fixed bottom-5 right-5 z-50 w-80',
+        'transition-all duration-300 ease-out',
+        hiding
+          ? 'translate-x-[110%] opacity-0'
+          : 'translate-x-0 opacity-100'
+      )}
+      role="alert"
+      aria-live="polite"
+    >
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden">
+        {/* Top color bar */}
+        <div className="h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
+
+        <div className="p-4">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-3.5 h-3.5 text-white" />
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">{NOTICE.title}</p>
-                <p className="text-xs text-slate-400">v{NOTICE.version} · {NOTICE.date}</p>
+                <p className="text-sm font-bold text-slate-900">{NOTICE.title} 🎉</p>
+                <p className="text-xs text-slate-400">v{NOTICE.version}</p>
               </div>
             </div>
             <button
-              onClick={() => setOpen(false)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-              aria-label="Close"
+              onClick={dismiss}
+              className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors flex-shrink-0"
+              aria-label="Dismiss"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Items */}
-          <ul className="px-4 py-3 space-y-2.5">
+          <ul className="space-y-1.5 mb-4">
             {NOTICE.items.map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <span className="w-4 h-4 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
+              <li key={i} className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 mt-1.5" />
                 <span className="text-xs text-slate-600">{item}</span>
               </li>
             ))}
           </ul>
 
-          <div className="px-4 pb-3">
-            <p className="text-xs text-slate-400 text-center">
-              You're on the latest version
-            </p>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-1.5',
+                'py-2 px-3 rounded-lg text-xs font-semibold transition-colors',
+                'bg-indigo-600 hover:bg-indigo-700 text-white',
+                'disabled:opacity-70'
+              )}
+            >
+              <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
+              {refreshing ? 'Refreshing...' : 'Refresh to update'}
+            </button>
+            <button
+              onClick={dismiss}
+              className="py-2 px-3 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+            >
+              Later
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

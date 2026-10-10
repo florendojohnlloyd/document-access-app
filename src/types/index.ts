@@ -26,8 +26,10 @@ export interface Profile {
 export interface Folder {
   id: string;
   name: string;
+  parent_folder_id: string | null;
   created_by: string | null;
   created_at: string;
+  subfolders?: Folder[];
 }
 
 export interface FileRecord {

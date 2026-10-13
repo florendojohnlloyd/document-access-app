@@ -31,7 +31,7 @@ const NOTICE = {
 
 const CLIENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || null;
 const DISMISSED_KEY_PREFIX = 'docuvault_dismissed_';
-const POLL_INTERVAL_MS = 20_000; // Check every 20 seconds
+const POLL_INTERVAL_MS = 10_000; // Check every 10 seconds
 
 export function UpdateNoticeBell() { return null; }
 
@@ -78,8 +78,8 @@ export function UpdateNoticeToast() {
       }
     };
 
-    // Initial check after 3 seconds, then poll every 20 seconds
-    const initialTimer = setTimeout(() => void check(), 3000);
+    // Initial check after 2 seconds, then poll every 10 seconds
+    const initialTimer = setTimeout(() => void check(), 2000);
     const interval = setInterval(() => void check(), POLL_INTERVAL_MS);
 
     return () => {

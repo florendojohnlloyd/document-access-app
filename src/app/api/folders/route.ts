@@ -60,19 +60,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Folder name is required.' }, { status: 400 });
     }
 
-    // Only allow 2 levels deep (root → subfolder)
+    // Allow up to 4 levels deep (e.g. Month → October 2026 → Branch → Subfolder)
     if (parent_folder_id) {
       const { data: parent } = await supabase
         .from('folders')
-        .select('parent_folder_id')
+        .select('id, parent_folder_id')
         .eq('id', parent_folder_id)
         .single();
 
       if (parent?.parent_folder_id) {
-        return NextResponse.json(
-          { error: 'Maximum 2 levels of folders allowed.' },
-          { status: 400 }
-        );
+        const { data: grandParent } = await supabase
+          .from('folders')
+          .select('parent_folder_id')
+          .eq('id', parent.parent_folder_id)
+          .single();
+
+        if (grandParent?.parent_folder_id) {
+          const { data: greatGrandParent } = await supabase
+            .from('folders')
+            .select('parent_folder_id')
+            .eq('id', grandParent.parent_folder_id)
+            .single();
+
+          if (greatGrandParent?.parent_folder_id) {
+            return NextResponse.json(
+              { error: 'Maximum folder depth reached.' },
+              { status: 400 }
+            );
+          }
+        }
       }
     }
 

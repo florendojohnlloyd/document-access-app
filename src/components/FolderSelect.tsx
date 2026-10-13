@@ -111,14 +111,22 @@ export function FolderSelect({
     onSelect(id); setOpen(false); setSearch('');
   };
 
-  const toggleExpand = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleExpand = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setExpanded((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
+
+  // Auto-expand 'Month' folder by default
+  useEffect(() => {
+    const monthFolder = folders.find((f) => f.name.toLowerCase() === 'month');
+    if (monthFolder) {
+      setExpanded((prev) => new Set([...prev, monthFolder.id]));
+    }
+  }, [folders]);
 
   const handleCreate = async (name?: string) => {
     if (!name?.trim()) return;
@@ -206,7 +214,14 @@ export function FolderSelect({
 
             {/* Folder button */}
             <button
-              onClick={() => handleSelect(folder.id)}
+              onClick={(e) => {
+                if (hasSubs) {
+                  toggleExpand(folder.id, e);
+                  onSelect(folder.id);
+                } else {
+                  handleSelect(folder.id);
+                }
+              }}
               className="flex-1 flex items-center gap-2 py-2 text-sm text-left min-w-0"
               role="option"
               aria-selected={isSelected}
@@ -224,8 +239,8 @@ export function FolderSelect({
             {/* Actions */}
             {(isManager || canDeleteFolders) && (
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                {/* Add subfolder — only for root folders (depth=0) */}
-                {isManager && depth === 0 && (
+                {/* Add subfolder */}
+                {isManager && depth < 3 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setTargetFolder(folder); setModalMode('create-sub'); setOpen(false); }}
                     className="p-1 rounded text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"

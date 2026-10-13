@@ -106,17 +106,14 @@ export default function FilesPage() {
     if (selectedFolderId === id) setSelectedFolderId(null);
   };
 
+  const selectedFolder = folders.find((f) => f.id === selectedFolderId) ?? null;
+
   return (
     <div className="space-y-4">
-      {/* Upload zone */}
+      {/* Combined Month & Upload card */}
       <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
-        <UploadZone folders={folders} onUploaded={() => void fetchFiles()} />
-      </div>
-
-      {/* Files card */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Month</h2>
+        <div className="flex items-center gap-3 flex-wrap">
           <FolderSelect
             folders={folders}
             selectedId={selectedFolderId}
@@ -125,16 +122,39 @@ export default function FilesPage() {
             canDelete={canManageFolders}
             userBranch={profile?.branch ?? null}
             isSuperAdmin={isSuperAdmin}
+            placeholder="Month"
             onFolderCreated={handleFolderCreated}
             onFolderRenamed={handleFolderRenamed}
             onFolderDeleted={handleFolderDeleted}
           />
 
           {canManageFolders && (
-            <NewFolderButton folders={folders} selectedFolderId={null} onFolderCreated={handleFolderCreated} />
+            <NewFolderButton
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              onFolderCreated={handleFolderCreated}
+            />
           )}
 
-          <span className="ml-auto text-xs text-slate-400 flex-shrink-0">
+          <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+          <UploadZone
+            folders={folders}
+            selectedFolderId={selectedFolderId}
+            onUploaded={() => void fetchFiles()}
+          />
+        </div>
+      </div>
+
+      {/* Files card */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-slate-800">
+              {selectedFolder ? selectedFolder.name : 'All Files'}
+            </h2>
+          </div>
+          <span className="text-xs text-slate-400 flex-shrink-0">
             {loadingFiles ? '...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
           </span>
         </div>

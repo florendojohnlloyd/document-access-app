@@ -14,6 +14,7 @@ interface FolderSelectProps {
   canDelete?: boolean;
   userBranch?: string | null;   // branch assigned to this user
   isSuperAdmin?: boolean;        // super_admin sees all folders
+  placeholder?: string;
   onFolderCreated: (folder: FolderType) => void;
   onFolderRenamed: (folder: FolderType) => void;
   onFolderDeleted: (id: string) => void;
@@ -47,6 +48,7 @@ export function FolderSelect({
   canDelete,
   userBranch,
   isSuperAdmin = false,
+  placeholder = 'Month',
   onFolderCreated,
   onFolderRenamed,
   onFolderDeleted,
@@ -283,7 +285,7 @@ export function FolderSelect({
           <span className="flex items-center gap-2 truncate">
             <FolderOpen className="w-4 h-4 text-slate-400 flex-shrink-0" />
             <span className="truncate font-medium">
-              {selectedFolder ? selectedFolder.name : 'All Files'}
+              {selectedFolder ? selectedFolder.name : placeholder}
             </span>
           </span>
           <ChevronDown className={cn('w-4 h-4 text-slate-400 flex-shrink-0 transition-transform', open && 'rotate-180')} />
@@ -301,7 +303,7 @@ export function FolderSelect({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search folders..."
+                  placeholder="Search Month / Folders..."
                   className="w-full bg-transparent text-sm text-slate-700 placeholder-slate-400 focus:outline-none"
                 />
               </div>

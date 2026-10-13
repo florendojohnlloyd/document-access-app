@@ -182,7 +182,7 @@ export async function DELETE(request: NextRequest) {
 
     if (fileCount && fileCount > 0) {
       return NextResponse.json(
-        { error: 'Hindi mabubura ang folder na may laman na files. Burahin muna ang mga files.' },
+        { error: 'Cannot delete a folder that contains files. Delete the files first.' },
         { status: 409 }
       );
     }
@@ -195,7 +195,7 @@ export async function DELETE(request: NextRequest) {
 
     if (subCount && subCount > 0) {
       return NextResponse.json(
-        { error: 'Hindi mabubura ang folder na may sub-folder. Burahin muna ang mga sub-folder.' },
+        { error: 'Cannot delete a folder that contains sub-folders. Delete the sub-folders first.' },
         { status: 409 }
       );
     }

@@ -34,7 +34,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
     }
 
-    const { data: updated, error } = await supabase
+    const serviceClient = createServiceClient();
+    const { data: updated, error } = await serviceClient
       .from('profiles')
       .update(updates)
       .eq('id', id)

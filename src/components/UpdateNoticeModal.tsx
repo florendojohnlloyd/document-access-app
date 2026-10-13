@@ -1,68 +1,121 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// ─── EDIT THIS to publish a new notice ───────────────────────────────────────
-// Bump NOTICE_VERSION each release → every user sees the toast again.
-const NOTICE_VERSION = '1.3.0';
+// ─────────────────────────────────────────────────────────────────────────────
+// HOW IT WORKS:
+//   The client polls /api/version every 60 seconds.
+//   When the server returns a version different from what the user last saw,
+//   the toast slides in from the right.
+//   "Refresh to update" reloads the page.
+//   "Later" dismisses and remembers the new version so it won't show again
+//   until the NEXT version bump.
+//
+// TO PUBLISH A NEW NOTICE:
+//   1. Change APP_VERSION in src/app/api/version/route.ts
+//   2. Update NOTICE.items below
+//   3. Deploy — the toast will auto-show on next poll (within 60s)
+// ─────────────────────────────────────────────────────────────────────────────
 
 const NOTICE = {
   title: 'DocuVault Updated',
-  version: NOTICE_VERSION,
   items: [
-    'Branch-based folder access — users see only their branch',
-    'Manager has full access to all branches',
-    'All English error messages',
-    'New Folder button beside folder dropdown',
-    'Simplified folder creation flow',
+    'Folder & Upload combined into one card',
+    'Branch-based folder access',
+    'Edit user role and branch',
+    'All-English error messages',
   ],
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = `docuvault_notice_v${NOTICE_VERSION}`;
+const CLIENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || null;
+const DISMISSED_KEY_PREFIX = 'docuvault_dismissed_';
+const POLL_INTERVAL_MS = 20_000; // Check every 20 seconds
 
 export function UpdateNoticeBell() { return null; }
 
 export function UpdateNoticeToast() {
-  // Three states: 'hidden' | 'entering' | 'visible' | 'leaving'
-  const [state, setState] = useState<'hidden' | 'entering' | 'visible' | 'leaving'>('hidden');
+  const [newVersion, setNewVersion] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [hiding, setHiding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const loadedVersionRef = useRef<string | null>(CLIENT_BUILD_ID);
 
   useEffect(() => {
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (dismissed) return;
+    let cancelled = false;
 
-    // Delay before sliding in
-    const t1 = setTimeout(() => setState('entering'), 600);
-    // After CSS transition fires, mark as visible
-    const t2 = setTimeout(() => setState('visible'), 650);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const check = async () => {
+      try {
+        const res = await fetch(`/api/version?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        });
+        if (!res.ok) return;
+        const data = await res.json() as { version: string };
+        if (cancelled || !data?.version) return;
+
+        // If this tab didn't have an initial version yet, lock it to the first fetched version
+        if (!loadedVersionRef.current) {
+          loadedVersionRef.current = data.version;
+          return;
+        }
+
+        // Check if server version is different from what this client loaded with
+        if (data.version !== loadedVersionRef.current) {
+          const dismissed = localStorage.getItem(`${DISMISSED_KEY_PREFIX}${data.version}`);
+          if (!dismissed) {
+            setNewVersion(data.version);
+            setHiding(false);
+            setVisible(true);
+          }
+        }
+      } catch {
+        // network error / offline — ignore
+      }
+    };
+
+    // Initial check after 3 seconds, then poll every 20 seconds
+    const initialTimer = setTimeout(() => void check(), 3000);
+    const interval = setInterval(() => void check(), POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, []);
 
   const dismiss = () => {
-    setState('leaving');
-    localStorage.setItem(STORAGE_KEY, '1');
-    setTimeout(() => setState('hidden'), 350);
+    if (newVersion) {
+      localStorage.setItem(`${DISMISSED_KEY_PREFIX}${newVersion}`, '1');
+    }
+    setHiding(true);
+    setTimeout(() => {
+      setVisible(false);
+      setNewVersion(null);
+    }, 350);
   };
 
   const handleRefresh = () => {
+    if (newVersion) {
+      localStorage.setItem(`${DISMISSED_KEY_PREFIX}${newVersion}`, '1');
+    }
     setRefreshing(true);
-    localStorage.setItem(STORAGE_KEY, '1');
-    setTimeout(() => window.location.reload(), 400);
+    setTimeout(() => window.location.reload(), 300);
   };
 
-  if (state === 'hidden') return null;
+  if (!visible || !newVersion) return null;
 
   return (
     <div
       className={cn(
         'fixed bottom-5 right-5 z-50 w-80',
         'transition-all duration-300 ease-out',
-        state === 'entering' || state === 'leaving'
-          ? 'translate-x-[110%] opacity-0'
-          : 'translate-x-0 opacity-100'
+        hiding ? 'translate-x-[110%] opacity-0' : 'translate-x-0 opacity-100'
       )}
       role="alert"
       aria-live="polite"
@@ -77,7 +130,9 @@ export function UpdateNoticeToast() {
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-900">{NOTICE.title} 🎉</p>
-                <p className="text-xs text-slate-400">v{NOTICE.version}</p>
+                <p className="text-xs text-slate-400">
+                  {newVersion.length > 8 ? 'New version available' : `v${newVersion} is available`}
+                </p>
               </div>
             </div>
             <button onClick={dismiss} className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors flex-shrink-0" aria-label="Dismiss">

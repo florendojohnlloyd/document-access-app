@@ -8,25 +8,28 @@ import type { Folder } from '@/types';
 interface UploadZoneProps {
   folders: Folder[];
   onUploaded: () => void;
+  selectedFolderId?: string | null;
 }
 
 const ACCEPTED = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx';
 
-export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
+export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedFolderId, setSelectedFolderId] = useState<string>('');
+  const [internalFolderId, setInternalFolderId] = useState<string>('');
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const effectiveFolderId = selectedFolderId || internalFolderId;
+
   const reset = () => {
     setSelectedFile(null);
     setProgress(0);
     setError('');
-    setSelectedFolderId('');
+    setInternalFolderId('');
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -52,8 +55,8 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
   const handleUpload = () => {
     if (!selectedFile) return;
     // Require folder selection
-    if (!selectedFolderId) {
-      setError('Please select a folder before uploading.');
+    if (!effectiveFolderId) {
+      setError('Please select a Month / Folder before uploading.');
       return;
     }
     setError('');
@@ -63,7 +66,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
 
     const formData = new FormData();
     formData.append('file', selectedFile);
-    formData.append('folder_id', selectedFolderId);
+    formData.append('folder_id', effectiveFolderId);
 
     const xhr = new XMLHttpRequest();
 
@@ -147,20 +150,20 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
         </div>
       )}
 
-      {/* Folder selector — only show when file is selected */}
-      {selectedFile && (
+      {/* Folder selector — only show when file is selected and no folder selected from parent */}
+      {selectedFile && !selectedFolderId && (
         <select
-          value={selectedFolderId}
-          onChange={(e) => { setSelectedFolderId(e.target.value); setError(''); }}
+          value={internalFolderId}
+          onChange={(e) => { setInternalFolderId(e.target.value); setError(''); }}
           className={cn(
             'px-3 py-2 rounded-lg border text-sm',
             'bg-white text-slate-800 border-slate-200',
             'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
-            !selectedFolderId && 'border-red-300 text-slate-400'
+            !internalFolderId && 'border-red-300 text-slate-400'
           )}
           aria-label="Select folder"
         >
-          <option value="" disabled>— Select a folder —</option>
+          <option value="" disabled>— Select Month / Folder —</option>
           {folders.map((f) => (
             <option key={f.id} value={f.id}>{f.name}</option>
           ))}
@@ -171,7 +174,7 @@ export function UploadZone({ folders, onUploaded }: UploadZoneProps) {
       {selectedFile && (
         <button
           onClick={handleUpload}
-          disabled={uploading || !selectedFolderId}
+          disabled={uploading || !effectiveFolderId}
           className={cn(
             'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
             'bg-indigo-600 hover:bg-indigo-700 text-white',

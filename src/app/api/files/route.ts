@@ -38,23 +38,29 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false });
 
-    if (folderId) {
-      query = query.eq('folder_id', folderId);
-    } else if (profile && profile.role !== 'super_admin' && profile.branch) {
+    if (profile && profile.role !== 'super_admin' && profile.branch) {
       // Non-super_admin: only show files in their branch folder or sub-folders of their branch
-      // Get all folder IDs that belong to their branch
       const { data: branchFolders } = await supabase
         .from('folders')
         .select('id, parent_folder_id')
         .or(`name.eq.${profile.branch},parent_folder_id.in.(select id from folders where name = '${profile.branch}')`);
 
-      if (branchFolders && branchFolders.length > 0) {
-        const folderIds = branchFolders.map((f) => f.id);
-        query = query.in('folder_id', folderIds);
-      } else {
-        // No branch folder exists yet, return empty
+      if (!branchFolders || branchFolders.length === 0) {
         return NextResponse.json([]);
       }
+
+      const branchFolderIds = branchFolders.map((f) => f.id);
+
+      if (folderId) {
+        if (!branchFolderIds.includes(folderId)) {
+          return NextResponse.json([]);
+        }
+        query = query.eq('folder_id', folderId);
+      } else {
+        query = query.in('folder_id', branchFolderIds);
+      }
+    } else if (folderId) {
+      query = query.eq('folder_id', folderId);
     }
 
     const { data: files, error } = await query;

@@ -55,16 +55,49 @@ export function FolderSelect({
 }: FolderSelectProps) {
   const canDeleteFolders = canDelete ?? isManager;
 
-  // For non-super_admin: only show their branch folder (and its subfolders)
-  const visibleTree = (() => {
-    if (isSuperAdmin || !userBranch) return buildTree(folders);
-    // Filter to only the branch folder that matches user's branch
-    const filtered = folders.filter(
-      (f) => f.name.toUpperCase() === userBranch.toUpperCase() ||
-        folders.some((parent) =>
-          parent.name.toUpperCase() === userBranch.toUpperCase() && f.parent_folder_id === parent.id
-        )
+  // For non-super_admin: only show their branch folder, its subfolders, and its parent path
+  const allowedBranchFolderIds = (() => {
+    if (isSuperAdmin || !userBranch) return null; // null means all folders allowed
+    const branchName = userBranch.trim().toUpperCase();
+    const folderMap = new Map(folders.map((f) => [f.id, f]));
+
+    const branchFolders = folders.filter(
+      (f) => f.name.trim().toUpperCase() === branchName
     );
+
+    const allowed = new Set<string>();
+
+    const addAncestors = (folder: FolderType) => {
+      let current = folder;
+      while (current.parent_folder_id) {
+        allowed.add(current.parent_folder_id);
+        const parent = folderMap.get(current.parent_folder_id);
+        if (!parent) break;
+        current = parent;
+      }
+    };
+
+    const addDescendants = (folderId: string) => {
+      folders.forEach((f) => {
+        if (f.parent_folder_id === folderId) {
+          allowed.add(f.id);
+          addDescendants(f.id);
+        }
+      });
+    };
+
+    branchFolders.forEach((bf) => {
+      allowed.add(bf.id);
+      addAncestors(bf);
+      addDescendants(bf.id);
+    });
+
+    return allowed;
+  })();
+
+  const visibleTree = (() => {
+    if (!allowedBranchFolderIds) return buildTree(folders);
+    const filtered = folders.filter((f) => allowedBranchFolderIds.has(f.id));
     return buildTree(filtered);
   })();
   const [open, setOpen] = useState(false);
@@ -79,14 +112,9 @@ export function FolderSelect({
   const tree = visibleTree;
 
   // Flatten for search — only show folders the user can access
-  const searchableFolders = isSuperAdmin || !userBranch
-    ? folders
-    : folders.filter(
-        (f) => f.name.toUpperCase() === userBranch.toUpperCase() ||
-          folders.some((parent) =>
-            parent.name.toUpperCase() === userBranch.toUpperCase() && f.parent_folder_id === parent.id
-          )
-      );
+  const searchableFolders = allowedBranchFolderIds
+    ? folders.filter((f) => allowedBranchFolderIds.has(f.id))
+    : folders;
   const filtered = search
     ? searchableFolders.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
     : null;
@@ -120,13 +148,32 @@ export function FolderSelect({
     });
   };
 
-  // Auto-expand 'Month' folder by default
+  // Auto-expand 'Month' folder and branch ancestors by default
   useEffect(() => {
+    const toExpand = new Set<string>();
     const monthFolder = folders.find((f) => f.name.toLowerCase() === 'month');
-    if (monthFolder) {
-      setExpanded((prev) => new Set([...prev, monthFolder.id]));
+    if (monthFolder) toExpand.add(monthFolder.id);
+
+    if (userBranch) {
+      const branchName = userBranch.trim().toUpperCase();
+      const folderMap = new Map(folders.map((f) => [f.id, f]));
+      folders
+        .filter((f) => f.name.trim().toUpperCase() === branchName)
+        .forEach((bf) => {
+          let curr = bf;
+          while (curr.parent_folder_id) {
+            toExpand.add(curr.parent_folder_id);
+            const p = folderMap.get(curr.parent_folder_id);
+            if (!p) break;
+            curr = p;
+          }
+        });
     }
-  }, [folders]);
+
+    if (toExpand.size > 0) {
+      setExpanded((prev) => new Set([...prev, ...toExpand]));
+    }
+  }, [folders, userBranch]);
 
   const handleCreate = async (name?: string) => {
     if (!name?.trim()) return;

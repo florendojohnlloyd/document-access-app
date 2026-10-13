@@ -86,9 +86,9 @@ export default function FilesPage() {
   useEffect(() => {
     if (!profile || profile.role === 'super_admin' || !profile.branch) return;
     if (folders.length === 0) return;
-    // Find the branch folder (top-level folder matching the user's branch)
+    // Find the branch folder matching the user's branch
     const branchFolder = folders.find(
-      (f) => f.name.toUpperCase() === profile.branch?.toUpperCase() && !f.parent_folder_id
+      (f) => f.name.toUpperCase() === profile.branch?.toUpperCase()
     );
     if (branchFolder && selectedFolderId === null) {
       setSelectedFolderId(branchFolder.id);
@@ -106,12 +106,20 @@ export default function FilesPage() {
     if (selectedFolderId === id) setSelectedFolderId(null);
   };
 
+  // For non-super_admin: only show their branch folders for upload
+  const uploadableFolders = isSuperAdmin || !profile?.branch
+    ? folders
+    : folders.filter(
+        (f) => f.name.toUpperCase() === profile.branch?.toUpperCase() ||
+          folders.some((parent) => parent.name.toUpperCase() === profile.branch?.toUpperCase() && f.parent_folder_id === parent.id)
+      );
+
   return (
     <div className="space-y-4">
       {/* Upload zone */}
       <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
-        <UploadZone folders={folders} onUploaded={() => void fetchFiles()} />
+        <UploadZone folders={uploadableFolders} selectedFolderId={selectedFolderId} onUploaded={() => void fetchFiles()} />
       </div>
 
       {/* Files card */}

@@ -84,6 +84,7 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
                 Full Name
               </th>
               <th className="text-left py-3 px-4 font-medium text-slate-500">Role</th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">Branch</th>
               <th className="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">
                 Created At
               </th>
@@ -121,6 +122,9 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
                 </td>
                 <td className="py-3 px-4">
                   <RoleBadge role={user.role} />
+                </td>
+                <td className="py-3 px-4 hidden sm:table-cell text-slate-500 text-xs">
+                  {user.branch ?? <span className="text-slate-300 italic">—</span>}
                 </td>
                 <td className="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">
                   {formatDate(user.created_at)}

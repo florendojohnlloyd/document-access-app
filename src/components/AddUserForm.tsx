@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Profile, Role } from '@/types';
+import { BRANCHES } from '@/types';
+import type { Profile, Role, Branch } from '@/types';
 
 interface AddUserFormProps {
   onCreated: (user: Profile) => void;
@@ -13,39 +14,30 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('user');
-
+  const [branch, setBranch] = useState<Branch | ''>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-
+    setError(''); setSuccess('');
+    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (!branch) { setError('Please select a branch.'); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim().toLowerCase(), password, role }),
+        body: JSON.stringify({ username: username.trim().toLowerCase(), password, role, branch }),
       });
-
       const data = await res.json() as Profile | { error: string };
-
       if (!res.ok || 'error' in data) {
         setError(('error' in data ? data.error : null) ?? 'Error creating user.');
       } else {
-        setSuccess(`User "${username}" created successfully! They can now log in.`);
+        setSuccess(`User "${username}" created successfully!`);
         onCreated(data as Profile);
-        setUsername('');
-        setPassword('');
-        setRole('user');
+        setUsername(''); setPassword(''); setRole('user'); setBranch('');
       }
     } catch {
       setError('Network error. Please try again.');
@@ -63,52 +55,36 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label htmlFor="new-username" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-            Username
-          </label>
-          <input
-            id="new-username"
-            type="text"
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. john.doe"
-            className={inputClass}
-          />
-          <p className="text-xs text-slate-400 mt-1">Lowercase only, no spaces</p>
+          <label htmlFor="new-username" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Username</label>
+          <input id="new-username" type="text" required value={username}
+            onChange={(e) => setUsername(e.target.value)} placeholder="e.g. john.doe" className={inputClass} />
+          <p className="text-xs text-slate-400 mt-1">Lowercase, no spaces</p>
         </div>
 
         <div>
-          <label htmlFor="new-password" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-            Password
-          </label>
-          <input
-            id="new-password"
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min. 6 characters"
-            className={inputClass}
-          />
+          <label htmlFor="new-password" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+          <input id="new-password" type="password" required minLength={6} value={password}
+            onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 characters" className={inputClass} />
         </div>
 
         <div>
-          <label htmlFor="new-role" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-            Role
-          </label>
-          <select
-            id="new-role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as Role)}
-            className={inputClass}
-          >
+          <label htmlFor="new-role" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label>
+          <select id="new-role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={inputClass}>
             <option value="user">User (View &amp; Upload)</option>
-            <option value="admin">Admin (View, Upload &amp; Delete)</option>
+            <option value="admin">Admin (Upload &amp; Delete)</option>
             <option value="super_admin">Super Admin (Full Access)</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="new-branch" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Branch</label>
+          <select id="new-branch" value={branch} onChange={(e) => setBranch(e.target.value as Branch)} className={inputClass} required>
+            <option value="" disabled>— Select branch —</option>
+            {BRANCHES.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -119,7 +95,6 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
           <p className="text-red-600 text-sm">{error}</p>
         </div>
       )}
-
       {success && (
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
@@ -127,29 +102,15 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={loading || !username || !password}
-        className={cn(
-          'flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors',
-          'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-          'disabled:opacity-50 disabled:cursor-not-allowed shadow-sm'
-        )}
-      >
+      <button type="submit" disabled={loading || !username || !password || !branch}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
         {loading ? (
-          <>
-            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            Creating...
-          </>
+          <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>Creating...</>
         ) : (
-          <>
-            <UserPlus className="w-4 h-4" />
-            Add User
-          </>
+          <><UserPlus className="w-4 h-4" />Add User</>
         )}
       </button>
     </form>

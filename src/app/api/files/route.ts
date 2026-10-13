@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
     const { supabase, session } = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, branch')
+      .eq('id', session.user.id)
+      .single();
+
     const { searchParams } = new URL(request.url);
     const folderId = searchParams.get('folder_id');
 
@@ -27,18 +33,32 @@ export async function GET(request: NextRequest) {
       .from('files')
       .select(`
         *,
-        folder:folders(id, name, created_by, created_at),
-        uploader:profiles!files_uploaded_by_fkey(id, username, full_name, role, name_locked, created_at)
+        folder:folders(id, name, parent_folder_id, created_by, created_at),
+        uploader:profiles!files_uploaded_by_fkey(id, username, full_name, role, branch, name_locked, created_at)
       `)
       .order('created_at', { ascending: false });
 
     if (folderId) {
       query = query.eq('folder_id', folderId);
+    } else if (profile && profile.role !== 'super_admin' && profile.branch) {
+      // Non-super_admin: only show files in their branch folder or sub-folders of their branch
+      // Get all folder IDs that belong to their branch
+      const { data: branchFolders } = await supabase
+        .from('folders')
+        .select('id, parent_folder_id')
+        .or(`name.eq.${profile.branch},parent_folder_id.in.(select id from folders where name = '${profile.branch}')`);
+
+      if (branchFolders && branchFolders.length > 0) {
+        const folderIds = branchFolders.map((f) => f.id);
+        query = query.in('folder_id', folderIds);
+      } else {
+        // No branch folder exists yet, return empty
+        return NextResponse.json([]);
+      }
     }
 
     const { data: files, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
     return NextResponse.json(files);
   } catch {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });

@@ -49,15 +49,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden. Super Admins only.' }, { status: 403 });
     }
 
-    const body = await request.json() as { username?: string; password?: string; role?: string };
-    const { username, password, role } = body;
+    const body = await request.json() as { username?: string; password?: string; role?: string; branch?: string };
+    const { username, password, role, branch } = body;
 
     if (!username || !password) {
-      return NextResponse.json({ error: 'Username at password ay required.' }, { status: 400 });
+      return NextResponse.json({ error: 'Username and password are required.' }, { status: 400 });
     }
-
     if (!role || !['super_admin', 'admin', 'user'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid role. Use "super_admin", "admin", or "user".' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
+    }
+    if (!branch) {
+      return NextResponse.json({ error: 'Branch is required.' }, { status: 400 });
     }
 
     if (password.length < 6) {
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
         id: authData.user.id,
         username,
         role,
+        branch,
         full_name: null,
         name_locked: false,
       })

@@ -25,9 +25,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   --   (see folders, files, audit_logs, storage policies below and re-run them).
   --
   role          text        NOT NULL DEFAULT 'user' CHECK (role IN ('super_admin', 'admin', 'user')),
+  branch        text        CHECK (branch IN (
+                              'CAGAYAN DE ORO','GENSAN','PAGADIAN','CAVITE','BUKIDNON',
+                              'ZAMBOANGA','ILOILO','TACLOBAN','CEBU','BACOLOD',
+                              'BUTUAN','TAGUM','DAVAO','RIZAL','PALAWAN',
+                              'ISABELA','CABANATUAN','PANGASINAN','CAMSUR'
+                            )),
   name_locked   boolean     NOT NULL DEFAULT false,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
+
+-- MIGRATION: Add branch column to existing DB:
+-- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS branch text
+--   CHECK (branch IN ('CAGAYAN DE ORO','GENSAN','PAGADIAN','CAVITE','BUKIDNON',
+--   'ZAMBOANGA','ILOILO','TACLOBAN','CEBU','BACOLOD','BUTUAN','TAGUM','DAVAO',
+--   'RIZAL','PALAWAN','ISABELA','CABANATUAN','PANGASINAN','CAMSUR'));
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 

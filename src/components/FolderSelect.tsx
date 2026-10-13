@@ -12,6 +12,8 @@ interface FolderSelectProps {
   onSelect: (id: string | null) => void;
   isManager: boolean;   // can create/delete folders
   canDelete?: boolean;
+  userBranch?: string | null;   // branch assigned to this user
+  isSuperAdmin?: boolean;        // super_admin sees all folders
   onFolderCreated: (folder: FolderType) => void;
   onFolderRenamed: (folder: FolderType) => void;
   onFolderDeleted: (id: string) => void;
@@ -43,11 +45,26 @@ export function FolderSelect({
   onSelect,
   isManager,
   canDelete,
+  userBranch,
+  isSuperAdmin = false,
   onFolderCreated,
   onFolderRenamed,
   onFolderDeleted,
 }: FolderSelectProps) {
   const canDeleteFolders = canDelete ?? isManager;
+
+  // For non-super_admin: only show their branch folder (and its subfolders)
+  const visibleTree = (() => {
+    if (isSuperAdmin || !userBranch) return buildTree(folders);
+    // Filter to only the branch folder that matches user's branch
+    const filtered = folders.filter(
+      (f) => f.name.toUpperCase() === userBranch.toUpperCase() ||
+        folders.some((parent) =>
+          parent.name.toUpperCase() === userBranch.toUpperCase() && f.parent_folder_id === parent.id
+        )
+    );
+    return buildTree(filtered);
+  })();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -57,12 +74,19 @@ export function FolderSelect({
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const tree = buildTree(folders);
+  const tree = visibleTree;
 
-  // Flatten for search
-  const allFolders = folders;
+  // Flatten for search — only show folders the user can access
+  const searchableFolders = isSuperAdmin || !userBranch
+    ? folders
+    : folders.filter(
+        (f) => f.name.toUpperCase() === userBranch.toUpperCase() ||
+          folders.some((parent) =>
+            parent.name.toUpperCase() === userBranch.toUpperCase() && f.parent_folder_id === parent.id
+          )
+      );
   const filtered = search
-    ? allFolders.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+    ? searchableFolders.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
     : null;
 
   const selectedFolder = folders.find((f) => f.id === selectedId) ?? null;

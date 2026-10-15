@@ -1,43 +1,44 @@
 # Deploy Supabase Edge Function for Unlimited File Uploads
 
+## Your Project Details
+- **Project Ref**: `oidcihmopmkhjqoxrbot`
+- **Edge Function URL**: `https://oidcihmopmkhjqoxrbot.supabase.co/functions/v1/upload-file`
+
 ## Prerequisites
 1. Install Supabase CLI: https://supabase.com/docs/guides/cli
-   ```bash
+   ```powershell
    npm install -g supabase
    ```
 
 2. Login to Supabase:
-   ```bash
+   ```powershell
    supabase login
    ```
 
 3. Link your project:
-   ```bash
-   supabase link --project-ref YOUR_PROJECT_REF
+   ```powershell
+   cd "c:\Users\flore\OneDrive\Desktop\System\Jaloy system\Document Access - Sample\document-access-app"
+   supabase link --project-ref oidcihmopmkhjqoxrbot
    ```
-   Get YOUR_PROJECT_REF from: https://supabase.com/dashboard/project/_/settings/general
 
 ## Deploy the Edge Function
 
-```bash
-cd "c:\Users\flore\OneDrive\Desktop\System\Jaloy system\Document Access - Sample\document-access-app"
+```powershell
 supabase functions deploy upload-file
 ```
 
 ## Verify Deployment
 
-1. Go to: https://supabase.com/dashboard/project/_/functions
+1. Go to: https://supabase.com/dashboard/project/oidcihmopmkhjqoxrbot/functions
 2. You should see `upload-file` function listed
 3. Status should be "Active"
 
-## Test the Function
+## Test Upload
 
-The upload endpoint will be:
+After deployment, the app will automatically use:
 ```
-https://YOUR_PROJECT_REF.supabase.co/functions/v1/upload-file
+https://oidcihmopmkhjqoxrbot.supabase.co/functions/v1/upload-file
 ```
-
-The app will automatically use this endpoint after deployment.
 
 ## Benefits
 

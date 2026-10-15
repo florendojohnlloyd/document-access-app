@@ -116,7 +116,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
           reject(new Error('Network error during upload'));
         });
 
-        xhr.open('POST', `${supabaseUrl}/functions/v1/upload-file`);
+        xhr.open('POST', '/api/files/upload-large');
         xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
         xhr.send(formData);
       });

@@ -11,7 +11,7 @@ interface UploadZoneProps {
   selectedFolderId?: string | null;
 }
 
-const ACCEPTED = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx';
+const ACCEPTED = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.zip';
 
 export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +37,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setError('');
     setSuccess('');
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-    const allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx'];
+    const allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
     if (!allowed.includes(ext)) {
       setError(`File type .${ext} is not allowed.`);
       return;
@@ -131,7 +131,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
         >
           <Paperclip className="w-4 h-4" />
           Choose file
-          <span className="text-xs text-slate-400">PDF, DOC, XLS, PNG, JPG</span>
+          <span className="text-xs text-slate-400">PDF, DOC, XLS, PNG, JPG, ZIP</span>
         </button>
       ) : (
         <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-sm">

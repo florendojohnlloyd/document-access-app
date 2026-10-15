@@ -40,23 +40,39 @@ export async function GET(request: NextRequest) {
 
     if (profile && profile.role !== 'super_admin' && profile.branch) {
       // Non-super_admin: only show files in their branch folder or sub-folders of their branch
-      const { data: branchFolders } = await supabase
+      
+      // Step 1: Get the root branch folder
+      const { data: rootBranchFolder } = await supabase
         .from('folders')
-        .select('id, parent_folder_id')
-        .or(`name.eq.${profile.branch},parent_folder_id.in.(select id from folders where name = '${profile.branch}')`);
+        .select('id, name')
+        .eq('name', profile.branch)
+        .is('parent_folder_id', null)
+        .single();
 
-      if (!branchFolders || branchFolders.length === 0) {
+      if (!rootBranchFolder) {
         return NextResponse.json([]);
       }
 
-      const branchFolderIds = branchFolders.map((f) => f.id);
+      // Step 2: Get all child folders of the branch folder
+      const { data: childFolders } = await supabase
+        .from('folders')
+        .select('id')
+        .eq('parent_folder_id', rootBranchFolder.id);
+
+      // Collect all valid folder IDs (root branch + children)
+      const branchFolderIds = [
+        rootBranchFolder.id,
+        ...(childFolders?.map((f) => f.id) || [])
+      ];
 
       if (folderId) {
+        // If a specific folder is requested, verify it's within the user's branch
         if (!branchFolderIds.includes(folderId)) {
           return NextResponse.json([]);
         }
         query = query.eq('folder_id', folderId);
       } else {
+        // Otherwise, show all files within the branch folders
         query = query.in('folder_id', branchFolderIds);
       }
     } else if (folderId) {

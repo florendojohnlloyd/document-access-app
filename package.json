@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node --max-http-header-size=80000 --max-old-space-size=4096 ./node_modules/.bin/next dev",
+    "dev": "SET NODE_OPTIONS=--max-http-header-size=80000 --max-old-space-size=4096 && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

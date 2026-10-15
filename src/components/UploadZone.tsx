@@ -68,7 +68,24 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setProgress(0);
 
     try {
-      // Simple FormData upload through our API
+      // Get Supabase client for auth token
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase configuration missing');
+      }
+
+      // Get session token
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      // Upload to Supabase Edge Function (NO SIZE LIMIT!)
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('folder_id', effectiveFolderId);
@@ -99,7 +116,8 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
           reject(new Error('Network error during upload'));
         });
 
-        xhr.open('POST', '/api/files/upload');
+        xhr.open('POST', `${supabaseUrl}/functions/v1/upload-file`);
+        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
         xhr.send(formData);
       });
 

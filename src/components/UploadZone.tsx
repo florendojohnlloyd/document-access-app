@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Upload, X, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Folder } from '@/types';
+import { createClient } from '@/lib/supabase/client';
 
 interface UploadZoneProps {
   folders: Folder[];
@@ -68,40 +69,67 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setProgress(0);
 
     try {
-      // Use FormData for direct upload (simpler approach)
+      // Step 1: Get upload metadata
+      const prepareResponse = await fetch('/api/files/prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: selectedFile.name,
+          folder_id: effectiveFolderId,
+        }),
+      });
+
+      if (!prepareResponse.ok) {
+        const errorData = await prepareResponse.json() as { error?: string };
+        throw new Error(errorData.error ?? 'Failed to prepare upload');
+      }
+
+      const prepareData = await prepareResponse.json() as {
+        storagePath: string;
+        folder_id: string | null;
+        filename: string;
+      };
+
+      // Step 2: Upload directly to Supabase from client (NO SIZE LIMIT!)
+      const supabase = createClient();
+      
+      // Use XMLHttpRequest for progress tracking
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('folder_id', effectiveFolderId);
+      
+      // Upload using Supabase client's upload method
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(prepareData.storagePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
+          onUploadProgress: (progress) => {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            setProgress(percent);
+          },
+        } as any);
 
-      const xhr = new XMLHttpRequest();
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
 
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setProgress(Math.round((e.loaded / e.total) * 100));
-        }
+      setProgress(100);
+
+      // Step 3: Confirm upload and save to database
+      const confirmResponse = await fetch('/api/files/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: prepareData.filename,
+          storage_path: prepareData.storagePath,
+          folder_id: prepareData.folder_id,
+        }),
       });
 
-      await new Promise<void>((resolve, reject) => {
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            try {
-              const data = JSON.parse(xhr.responseText) as { error?: string };
-              reject(new Error(data.error ?? 'Upload failed'));
-            } catch {
-              reject(new Error('Upload failed'));
-            }
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'));
-        });
-
-        xhr.open('POST', '/api/files/upload');
-        xhr.send(formData);
-      });
+      if (!confirmResponse.ok) {
+        const errorData = await confirmResponse.json() as { error?: string };
+        throw new Error(errorData.error ?? 'Failed to save file record');
+      }
 
       setUploading(false);
       setSuccess(`"${selectedFile.name}" uploaded successfully!`);

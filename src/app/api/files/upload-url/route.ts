@@ -64,21 +64,15 @@ export async function POST(request: NextRequest) {
     const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${folderName}/${uuid}_${safeName}`;
 
-    // Create a signed upload URL (valid for 1 hour)
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('documents')
-      .createSignedUploadUrl(storagePath);
-
-    if (uploadError || !uploadData) {
-      return NextResponse.json({ error: `Failed to create upload URL: ${uploadError?.message}` }, { status: 500 });
-    }
-
+    // Instead of signed upload URL, we'll use createSignedUrl for uploading
+    // But actually, we need to create the file path first, then return the upload URL
+    // Supabase allows direct upload to storage with proper auth
+    
     return NextResponse.json({
-      uploadUrl: uploadData.signedUrl,
       storagePath: storagePath,
-      token: uploadData.token,
       folder_id: resolvedFolderId,
       filename: filename,
+      uploadPath: storagePath,
     });
   } catch (error) {
     console.error('Upload URL generation error:', error);

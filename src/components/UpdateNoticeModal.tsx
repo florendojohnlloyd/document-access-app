@@ -22,10 +22,10 @@ import { cn } from '@/lib/utils';
 const NOTICE = {
   title: 'DocuVault Updated',
   items: [
-    'Folder & Upload combined into one card',
-    'Branch-based folder access',
-    'Edit user role and branch',
-    'All-English error messages',
+    'Fixed: Users can now see uploaded files in their branch',
+    'ZIP file upload support added',
+    'Large file upload improvements',
+    'Better error messages and notifications',
   ],
 };
 

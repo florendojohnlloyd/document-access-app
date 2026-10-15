@@ -9,6 +9,12 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_ID: buildId,
   },
+  experimental: {
+    // Increase body size limit to 500MB for file uploads
+    serverActions: {
+      bodySizeLimit: '500mb',
+    },
+  },
 };
 module.exports = nextConfig;
 

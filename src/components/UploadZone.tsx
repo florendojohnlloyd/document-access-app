@@ -36,6 +36,15 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
   const handleFileSelect = (file: File) => {
     setError('');
     setSuccess('');
+    
+    // Check file size (warn if >50MB for local dev, >4MB for production)
+    const maxSize = process.env.NODE_ENV === 'production' ? 4.5 * 1024 * 1024 : 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const maxSizeMB = Math.floor(maxSize / 1024 / 1024);
+      setError(`File too large. Maximum size: ${maxSizeMB}MB. Your file: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
+      return;
+    }
+    
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     const allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
     if (!allowed.includes(ext)) {

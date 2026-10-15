@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "src/app/api/files/upload/route.ts": {
+      "maxDuration": 300
+    }
+  },
+  "rewrites": []
+}

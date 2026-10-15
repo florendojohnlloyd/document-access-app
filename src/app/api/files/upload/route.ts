@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 
+// Configure the API route to handle large file uploads
+export const runtime = 'nodejs';
+export const maxDuration = 300; // 5 minutes timeout
+
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'image/png',

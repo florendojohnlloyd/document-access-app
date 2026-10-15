@@ -45,13 +45,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Profile not found.' }, { status: 403 });
     }
 
-    const formData = await request.formData();
+    let formData;
+    try {
+      formData = await request.formData();
+    } catch (error) {
+      console.error('FormData parsing error:', error);
+      return NextResponse.json({ 
+        error: 'File too large or invalid request. Maximum file size may be limited by hosting.' 
+      }, { status: 413 });
+    }
+
     const file = formData.get('file') as File | null;
     const folderId = formData.get('folder_id') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'File is required.' }, { status: 400 });
     }
+
+    console.log(`Uploading file: ${file.name}, size: ${file.size} bytes`);
 
     const ext = getExtension(file.name);
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
@@ -85,8 +96,17 @@ export async function POST(request: NextRequest) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${folderName}/${uuid}_${safeName}`;
 
-    const arrayBuffer = await file.arrayBuffer();
+    let arrayBuffer;
+    try {
+      arrayBuffer = await file.arrayBuffer();
+    } catch (error) {
+      console.error('File read error:', error);
+      return NextResponse.json({ error: 'Failed to read file data' }, { status: 500 });
+    }
+
     const buffer = Buffer.from(arrayBuffer);
+
+    console.log(`Uploading to Supabase storage: ${storagePath}`);
 
     const { error: uploadError } = await supabase.storage
       .from('documents')
@@ -96,6 +116,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
       return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 });
     }
 
@@ -113,6 +134,7 @@ export async function POST(request: NextRequest) {
     if (dbError) {
       // Clean up the uploaded file if DB insert fails
       await supabase.storage.from('documents').remove([storagePath]);
+      console.error('Database insert error:', dbError);
       return NextResponse.json({ error: dbError.message }, { status: 500 });
     }
 
@@ -124,8 +146,10 @@ export async function POST(request: NextRequest) {
       detail: `File "${file.name}" uploaded to folder "${folderName}".`,
     });
 
+    console.log(`Upload successful: ${file.name}`);
     return NextResponse.json(fileRecord, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('Upload route error:', error);
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });
   }
 }

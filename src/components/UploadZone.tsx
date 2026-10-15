@@ -65,30 +65,11 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setProgress(0);
 
     try {
-      // Step 1: Get signed upload URL from our API
-      const urlResponse = await fetch('/api/files/upload-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: selectedFile.name,
-          folder_id: effectiveFolderId,
-        }),
-      });
+      // Use FormData for direct upload (simpler approach)
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('folder_id', effectiveFolderId);
 
-      if (!urlResponse.ok) {
-        const errorData = await urlResponse.json() as { error?: string };
-        throw new Error(errorData.error ?? 'Failed to get upload URL');
-      }
-
-      const uploadData = await urlResponse.json() as {
-        uploadUrl: string;
-        storagePath: string;
-        token: string;
-        folder_id: string | null;
-        filename: string;
-      };
-
-      // Step 2: Upload directly to Supabase Storage using signed URL
       const xhr = new XMLHttpRequest();
 
       xhr.upload.addEventListener('progress', (e) => {
@@ -102,7 +83,12 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error('Upload to storage failed'));
+            try {
+              const data = JSON.parse(xhr.responseText) as { error?: string };
+              reject(new Error(data.error ?? 'Upload failed'));
+            } catch {
+              reject(new Error('Upload failed'));
+            }
           }
         });
 
@@ -110,34 +96,29 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
           reject(new Error('Network error during upload'));
         });
 
-        xhr.open('PUT', uploadData.uploadUrl);
-        xhr.setRequestHeader('Content-Type', selectedFile.type || 'application/octet-stream');
-        xhr.send(selectedFile);
+        xhr.open('POST', '/api/files/upload');
+        xhr.send(formData);
       });
-
-      // Step 3: Confirm upload and save to database
-      const confirmResponse = await fetch('/api/files/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: uploadData.filename,
-          storage_path: uploadData.storagePath,
-          folder_id: uploadData.folder_id,
-        }),
-      });
-
-      if (!confirmResponse.ok) {
-        const errorData = await confirmResponse.json() as { error?: string };
-        throw new Error(errorData.error ?? 'Failed to confirm upload');
-      }
 
       setUploading(false);
       setSuccess(`"${selectedFile.name}" uploaded successfully!`);
+      
+      // Auto-clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+      
       reset();
       onUploaded();
     } catch (err) {
       setUploading(false);
-      setError(err instanceof Error ? err.message : 'Upload failed.');
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed.';
+      setError(errorMessage);
+      
+      // Auto-clear error message after 5 seconds
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     }
   };
 

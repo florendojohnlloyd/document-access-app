@@ -93,21 +93,13 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
       // Step 2: Upload directly to Supabase from client (NO SIZE LIMIT!)
       const supabase = createClient();
       
-      // Use XMLHttpRequest for progress tracking
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      
       // Upload using Supabase client's upload method
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(prepareData.storagePath, selectedFile, {
           cacheControl: '3600',
           upsert: false,
-          onUploadProgress: (progress) => {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            setProgress(percent);
-          },
-        } as any);
+        });
 
       if (uploadError) {
         throw new Error(`Upload failed: ${uploadError.message}`);

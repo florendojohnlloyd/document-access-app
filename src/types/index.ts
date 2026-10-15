@@ -38,6 +38,7 @@ export type ActionType =
   | 'FOLDER_RENAME'
   | 'FOLDER_DELETE'
   | 'USER_CREATE'
+  | 'USER_UPDATE'
   | 'USER_DELETE'
   | 'NAME_SET'
   | 'VIEW';

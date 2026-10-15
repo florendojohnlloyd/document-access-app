@@ -45,6 +45,10 @@ const ACTION_STYLES: Record<ActionType, { label: string; className: string }> = 
     label: 'User Created',
     className: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
   },
+  USER_UPDATE: {
+    label: 'User Updated',
+    className: 'bg-orange-100 text-orange-700',
+  },
   USER_DELETE: {
     label: 'User Deleted',
     className: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',

@@ -10,7 +10,11 @@ import { cn } from '@/lib/utils';
 import type { FileRecord, Folder, Profile } from '@/types';
 
 // ── New Folder button ─────────────────────────────────────────────────────────
-function NewFolderButton({ onFolderCreated }: { folders: Folder[]; selectedFolderId: string | null; onFolderCreated: (f: Folder) => void }) {
+function NewFolderButton({ onFolderCreated }: {
+  folders: Folder[];
+  selectedFolderId: string | null;
+  onFolderCreated: (f: Folder) => void;
+}) {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,10 +36,27 @@ function NewFolderButton({ onFolderCreated }: { folders: Folder[]; selectedFolde
 
   return (
     <>
-      <button onClick={() => setShowModal(true)} className={cn('flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors', 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100', 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500')}>
-        <Plus className="w-3.5 h-3.5" />New Folder
+      <button
+        onClick={() => setShowModal(true)}
+        className={cn(
+          'flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors',
+          'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500'
+        )}
+      >
+        <Plus className="w-3.5 h-3.5" />
+        New Folder
       </button>
-      {showModal && <Modal title="New Folder" inputLabel="Folder Name" defaultValue="" confirmLabel="Create" onConfirm={handleCreate} onClose={() => setShowModal(false)} />}
+      {showModal && (
+        <Modal
+          title="New Folder"
+          inputLabel="Folder Name"
+          defaultValue=""
+          confirmLabel="Create"
+          onConfirm={handleCreate}
+          onClose={() => setShowModal(false)}
+        />
+      )}
       {error && (
         <div className="fixed bottom-4 right-4 z-50 bg-red-50 border border-red-200 rounded-lg px-4 py-3 shadow-lg">
           <p className="text-red-600 text-sm">{error}</p>
@@ -76,19 +97,22 @@ export default function FilesPage() {
       const res = await fetch(url);
       const data = await res.json() as FileRecord[];
       setFiles(data);
-    } catch { setFiles([]); } finally { setLoadingFiles(false); }
+    } catch {
+      setFiles([]);
+    } finally {
+      setLoadingFiles(false);
+    }
   }, [selectedFolderId]);
 
   useEffect(() => { void fetchFolders(); }, [fetchFolders]);
   useEffect(() => { void fetchFiles(); }, [fetchFiles]);
 
-  // Auto-select branch folder for non-super_admin users
+  // Auto-select branch folder on load for non-super_admin
   useEffect(() => {
     if (!profile || profile.role === 'super_admin' || !profile.branch) return;
     if (folders.length === 0) return;
-    // Find the branch folder matching the user's branch
     const branchFolder = folders.find(
-      (f) => f.name.toUpperCase() === profile.branch?.toUpperCase()
+      (f) => f.name.toUpperCase() === profile.branch?.toUpperCase() && !f.parent_folder_id
     );
     if (branchFolder && selectedFolderId === null) {
       setSelectedFolderId(branchFolder.id);
@@ -100,31 +124,43 @@ export default function FilesPage() {
   const canManageFolders = profile?.role === 'super_admin' || profile?.role === 'admin';
 
   const handleFolderCreated = (folder: Folder) => setFolders((prev) => [...prev, folder]);
-  const handleFolderRenamed = (updated: Folder) => setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+  const handleFolderRenamed = (updated: Folder) =>
+    setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
   const handleFolderDeleted = (id: string) => {
     setFolders((prev) => prev.filter((f) => f.id !== id));
     if (selectedFolderId === id) setSelectedFolderId(null);
   };
 
-  // For non-super_admin: only show their branch folders for upload
+  // Branch-filtered folders for UploadZone
   const uploadableFolders = isSuperAdmin || !profile?.branch
     ? folders
     : folders.filter(
-        (f) => f.name.toUpperCase() === profile.branch?.toUpperCase() ||
-          folders.some((parent) => parent.name.toUpperCase() === profile.branch?.toUpperCase() && f.parent_folder_id === parent.id)
+        (f) =>
+          f.name.toUpperCase() === profile.branch?.toUpperCase() ||
+          folders.some(
+            (p) => p.name.toUpperCase() === profile.branch?.toUpperCase() && f.parent_folder_id === p.id
+          )
       );
 
   return (
-    <div className="space-y-4">
-      {/* Upload zone */}
-      <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
-        <UploadZone folders={uploadableFolders} selectedFolderId={selectedFolderId} onUploaded={() => void fetchFiles()} />
-      </div>
+    <div>
+      {/* Single combined card */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
 
-      {/* Files card */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {/* Upload section */}
+        <div>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
+          <UploadZone
+            folders={uploadableFolders}
+            selectedFolderId={selectedFolderId}
+            onUploaded={() => void fetchFiles()}
+          />
+        </div>
+
+        <div className="border-t border-slate-100" />
+
+        {/* Folder toolbar */}
+        <div className="flex items-center gap-2 flex-wrap">
           <FolderSelect
             folders={folders}
             selectedId={selectedFolderId}
@@ -133,7 +169,6 @@ export default function FilesPage() {
             canDelete={canManageFolders}
             userBranch={profile?.branch ?? null}
             isSuperAdmin={isSuperAdmin}
-            placeholder="Month"
             onFolderCreated={handleFolderCreated}
             onFolderRenamed={handleFolderRenamed}
             onFolderDeleted={handleFolderDeleted}
@@ -152,11 +187,14 @@ export default function FilesPage() {
           </span>
         </div>
 
+        {/* File table */}
         <FileTable
           files={files}
           isManager={isSuperAdmin}
           canDelete={canDelete}
-          onFileRenamed={(updated) => setFiles((prev) => prev.map((f) => (f.id === updated.id ? { ...f, name: updated.name } : f)))}
+          onFileRenamed={(updated) =>
+            setFiles((prev) => prev.map((f) => (f.id === updated.id ? { ...f, name: updated.name } : f)))
+          }
           onFileDeleted={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))}
           isLoading={loadingFiles}
         />

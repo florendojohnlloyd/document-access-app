@@ -34,12 +34,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
     }
 
+    // Use supabase (user client) — RLS allows super_admin to update any profile
+    // Use service client to bypass RLS restrictions on profile updates
     const serviceClient = createServiceClient();
     const { data: updated, error } = await serviceClient
       .from('profiles')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select('id, username, full_name, role, branch, name_locked, created_at')
+      .limit(1)
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -47,7 +50,7 @@ export async function PATCH(
     await supabase.from('audit_logs').insert({
       actor_id: session.user.id,
       actor_name: actorProfile.username,
-      action: 'USER_CREATE',
+      action: 'USER_UPDATE',
       detail: `User "${updated.username}" updated: ${JSON.stringify(updates)}.`,
     });
 

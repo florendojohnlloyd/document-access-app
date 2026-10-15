@@ -41,29 +41,31 @@ export async function GET(request: NextRequest) {
     if (profile && profile.role !== 'super_admin' && profile.branch) {
       // Non-super_admin: only show files in their branch folder or sub-folders of their branch
       
-      // Step 1: Get the root branch folder
-      const { data: rootBranchFolder } = await supabase
+      // Step 1: Get ALL folders with the branch name (at any level)
+      const { data: branchFolders } = await supabase
         .from('folders')
-        .select('id, name')
-        .eq('name', profile.branch)
-        .is('parent_folder_id', null)
-        .single();
+        .select('id, name, parent_folder_id')
+        .eq('name', profile.branch);
 
-      if (!rootBranchFolder) {
+      if (!branchFolders || branchFolders.length === 0) {
         return NextResponse.json([]);
       }
 
-      // Step 2: Get all child folders of the branch folder
-      const { data: childFolders } = await supabase
-        .from('folders')
-        .select('id')
-        .eq('parent_folder_id', rootBranchFolder.id);
-
-      // Collect all valid folder IDs (root branch + children)
-      const branchFolderIds = [
-        rootBranchFolder.id,
-        ...(childFolders?.map((f) => f.id) || [])
-      ];
+      // Step 2: For each branch folder, get its children
+      const branchFolderIds: string[] = [];
+      for (const branchFolder of branchFolders) {
+        branchFolderIds.push(branchFolder.id);
+        
+        // Get children of this branch folder
+        const { data: childFolders } = await supabase
+          .from('folders')
+          .select('id')
+          .eq('parent_folder_id', branchFolder.id);
+        
+        if (childFolders) {
+          branchFolderIds.push(...childFolders.map((f) => f.id));
+        }
+      }
 
       if (folderId) {
         // If a specific folder is requested, verify it's within the user's branch

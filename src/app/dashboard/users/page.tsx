@@ -32,8 +32,12 @@ export default function UsersPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/users');
-      const data = await res.json() as Profile[];
-      setUsers(data);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        setUsers([]);
+      }
     } catch {
       setUsers([]);
     } finally {

@@ -20,12 +20,12 @@ import { cn } from '@/lib/utils';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const NOTICE = {
-  title: 'DocuVault Updated',
+  title: 'DocuVault Updated (v1.4.0)',
   items: [
-    'Fixed: Users can now see uploaded files in their branch',
-    'ZIP file upload support added',
-    'Large file upload improvements',
-    'Better error messages and notifications',
+    'Unlimited file size support: Upload 300MB+ ZIP/PDF files seamlessly',
+    'Resumable chunked uploads (TUS protocol) — no more upload fails or timeouts',
+    'Live upload progress showing MB uploaded vs total with Cancel option',
+    'Added support for CSV (.csv) and TXT (.txt) files',
   ],
 };
 

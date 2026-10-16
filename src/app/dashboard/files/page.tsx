@@ -85,9 +85,15 @@ export default function FilesPage() {
   const fetchFolders = useCallback(async () => {
     try {
       const res = await fetch('/api/folders');
-      const data = await res.json() as Folder[];
-      setFolders(data);
-    } catch {}
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setFolders(data);
+      } else {
+        setFolders([]);
+      }
+    } catch {
+      setFolders([]);
+    }
   }, []);
 
   const fetchFiles = useCallback(async () => {
@@ -95,8 +101,12 @@ export default function FilesPage() {
     try {
       const url = selectedFolderId ? `/api/files?folder_id=${selectedFolderId}` : '/api/files';
       const res = await fetch(url);
-      const data = await res.json() as FileRecord[];
-      setFiles(data);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setFiles(data);
+      } else {
+        setFiles([]);
+      }
     } catch {
       setFiles([]);
     } finally {

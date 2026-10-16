@@ -35,8 +35,12 @@ export default function LogsPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/logs');
-      const data = await res.json() as AuditLog[];
-      setLogs(data);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLogs(data);
+      } else {
+        setLogs([]);
+      }
       setLastRefreshed(new Date());
     } catch {
       setLogs([]);

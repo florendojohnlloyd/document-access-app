@@ -2,6 +2,8 @@
 
 import { useRef, useState } from 'react';
 import { Upload, X, Paperclip } from 'lucide-react';
+import * as tus from 'tus-js-client';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Folder } from '@/types';
 
@@ -11,7 +13,7 @@ interface UploadZoneProps {
   selectedFolderId?: string | null;
 }
 
-const ACCEPTED = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.zip';
+const ACCEPTED = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.zip,.csv,.txt';
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -21,33 +23,54 @@ function formatFileSize(bytes: number) {
 
 export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const uploadRef = useRef<tus.Upload | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [internalFolderId, setInternalFolderId] = useState<string>('');
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [bytesUploaded, setBytesUploaded] = useState(0);
+  const [bytesTotal, setBytesTotal] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const effectiveFolderId = selectedFolderId || internalFolderId;
 
   const reset = () => {
+    if (uploadRef.current) {
+      uploadRef.current.abort();
+      uploadRef.current = null;
+    }
     setSelectedFile(null);
     setProgress(0);
+    setBytesUploaded(0);
+    setBytesTotal(0);
     setError('');
     setInternalFolderId('');
     if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const handleCancel = () => {
+    if (uploadRef.current) {
+      uploadRef.current.abort();
+      uploadRef.current = null;
+    }
+    setUploading(false);
+    setProgress(0);
+    setBytesUploaded(0);
+    setBytesTotal(0);
+    setError('Upload cancelled.');
+    setTimeout(() => setError(''), 4000);
   };
 
   const handleFileSelect = (file: File) => {
     setError('');
     setSuccess('');
 
-    // No file size limit — direct Supabase upload handles large files!
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-    const allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
+    const allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'csv', 'txt'];
     if (!allowed.includes(ext)) {
-      setError(`File type .${ext} is not allowed.`);
+      setError(`File type .${ext} is not allowed. Allowed: PDF, PNG, JPG, DOC, XLS, ZIP, CSV, TXT`);
       return;
     }
     setSelectedFile(file);
@@ -62,7 +85,6 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
 
   const handleUpload = async () => {
     if (!selectedFile) return;
-    // Require folder selection
     if (!effectiveFolderId) {
       setError('Please select a Month / Folder before uploading.');
       return;
@@ -71,9 +93,11 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setSuccess('');
     setUploading(true);
     setProgress(0);
+    setBytesUploaded(0);
+    setBytesTotal(selectedFile.size);
 
     try {
-      // Step 1: Request signed upload URL from prepare route (bypasses Vercel 4.5MB payload limit)
+      // Step 1: Request storage path and metadata from prepare route
       const prepareRes = await fetch('/api/files/prepare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,55 +114,86 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
 
       const prepareData = await prepareRes.json() as {
         storagePath: string;
-        signedUrl: string;
-        token: string;
         folder_id: string | null;
         filename: string;
       };
 
-      // Step 2: Upload directly to Supabase storage signed URL using XMLHttpRequest (tracks real progress)
-      const uploadForm = new FormData();
-      uploadForm.append('cacheControl', '3600');
-      uploadForm.append('', selectedFile);
+      // Step 2: Get active user session for TUS authentication
+      const supabase = createClient();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-      const xhr = new XMLHttpRequest();
+      if (sessionError || !session) {
+        throw new Error('Your session expired. Please refresh the page and log in again.');
+      }
 
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.min(99, Math.round((e.loaded / e.total) * 100));
-          setProgress(percent);
-        }
-      });
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://oidcihmopmkhjqoxrbot.supabase.co';
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+      const projectId = new URL(supabaseUrl).hostname.split('.')[0];
+      const endpoint = `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`;
 
+      // Step 3: Resumable chunked upload via TUS protocol (handles 300MB+, auto-retries, no 50MB Kong limit)
       await new Promise<void>((resolve, reject) => {
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
+        const upload = new tus.Upload(selectedFile, {
+          endpoint,
+          retryDelays: [0, 3000, 5000, 10000, 20000],
+          chunkSize: 6 * 1024 * 1024, // 6MB chunks recommended by Supabase
+          metadata: {
+            bucketName: 'documents',
+            objectName: prepareData.storagePath,
+            contentType: selectedFile.type || 'application/octet-stream',
+            cacheControl: '3600',
+          },
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            apikey: supabaseAnonKey,
+          },
+          uploadDataDuringCreation: true,
+          removeFingerprintOnSuccess: true,
+          onBeforeRequest: async (req) => {
+            // Ensure token stays valid even during multi-hour / multi-gigabyte uploads
             try {
-              const data = JSON.parse(xhr.responseText) as { error?: string; message?: string };
-              reject(new Error(data.error ?? data.message ?? `Direct upload failed with status ${xhr.status}`));
-            } catch {
-              reject(new Error(`Direct upload failed with status ${xhr.status}`));
-            }
+              const { data: freshData } = await supabase.auth.getSession();
+              const freshToken = freshData.session?.access_token;
+              if (freshToken) {
+                req.setHeader('authorization', `Bearer ${freshToken}`);
+              }
+            } catch {}
+          },
+          onError: (err) => {
+            uploadRef.current = null;
+            reject(err);
+          },
+          onProgress: (bytesSent, total) => {
+            const percent = Math.min(99, Math.round((bytesSent / total) * 100));
+            setProgress(percent);
+            setBytesUploaded(bytesSent);
+            setBytesTotal(total);
+          },
+          onSuccess: () => {
+            uploadRef.current = null;
+            setProgress(100);
+            setBytesUploaded(selectedFile.size);
+            resolve();
+          },
+        });
+
+        uploadRef.current = upload;
+
+        // Check if there is a previous upload to resume, otherwise start
+        upload.findPreviousUploads().then((previousUploads) => {
+          if (previousUploads.length) {
+            upload.resumeFromPreviousUpload(previousUploads[0]);
           }
+          upload.start();
+        }).catch(() => {
+          upload.start();
         });
-
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload to storage'));
-        });
-
-        xhr.addEventListener('abort', () => {
-          reject(new Error('Upload was cancelled'));
-        });
-
-        xhr.open('PUT', prepareData.signedUrl);
-        xhr.send(uploadForm);
       });
 
-      setProgress(100);
-
-      // Step 3: Confirm upload with server to record file in database and create audit log
+      // Step 4: Confirm upload with server to record file in database and create audit log
       const confirmRes = await fetch('/api/files/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,25 +210,24 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
       }
 
       setUploading(false);
-      setSuccess(`"${selectedFile.name}" uploaded successfully!`);
+      setSuccess(`"${selectedFile.name}" (${formatFileSize(selectedFile.size)}) uploaded successfully!`);
 
-      // Auto-clear success message after 4 seconds
       setTimeout(() => {
         setSuccess('');
-      }, 4000);
+      }, 5000);
 
       reset();
       onUploaded();
     } catch (err) {
       setUploading(false);
+      uploadRef.current = null;
       const errorMessage = err instanceof Error ? err.message : 'Upload failed.';
       setError(errorMessage);
       console.error('Upload error:', err);
 
-      // Auto-clear error message after 6 seconds
       setTimeout(() => {
         setError('');
-      }, 6000);
+      }, 8000);
     }
   };
 
@@ -210,7 +264,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
             <Paperclip className="w-4 h-4 text-indigo-500 flex-shrink-0" />
             <span className="font-medium">Choose file</span>
             <span className="text-xs text-slate-400 hidden xs:inline sm:inline">
-              (No size limit · PDF, DOC, XLS, PNG, JPG, ZIP)
+              (Unlimited size · PDF, DOC, XLS, ZIP, CSV)
             </span>
           </button>
         ) : (
@@ -258,34 +312,46 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
           </select>
         )}
 
-        {/* Upload button */}
+        {/* Upload button & Cancel button */}
         {selectedFile && (
-          <button
-            type="button"
-            onClick={handleUpload}
-            disabled={uploading || !effectiveFolderId}
-            className={cn(
-              'w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
-              'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleUpload}
+              disabled={uploading || !effectiveFolderId}
+              className={cn(
+                'w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
+                'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {uploading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  <span>{progress > 0 ? `Uploading (${progress}%)` : 'Uploading...'}</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  <span>Upload</span>
+                </>
+              )}
+            </button>
+            {uploading && (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
+                title="Cancel upload"
+              >
+                Cancel
+              </button>
             )}
-          >
-            {uploading ? (
-              <>
-                <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                <span>{progress > 0 ? `Uploading (${progress}%)` : 'Uploading...'}</span>
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                <span>Upload</span>
-              </>
-            )}
-          </button>
+          </div>
         )}
       </div>
 
@@ -293,8 +359,10 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
       {uploading && (
         <div className="w-full space-y-1.5 pt-1">
           <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>Direct storage upload</span>
-            <span>{progress}%</span>
+            <span>
+              Resumable upload · {formatFileSize(bytesUploaded)} of {formatFileSize(bytesTotal || selectedFile?.size || 0)}
+            </span>
+            <span className="font-semibold text-indigo-600">{progress}%</span>
           </div>
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
             <div

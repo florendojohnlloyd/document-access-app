@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
       storagePath,
       signedUrl,
       token,
+      accessToken: session.access_token,
       folder_id: resolvedFolderId,
       filename,
     });

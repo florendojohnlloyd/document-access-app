@@ -114,18 +114,24 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
 
       const prepareData = await prepareRes.json() as {
         storagePath: string;
+        accessToken?: string;
         folder_id: string | null;
         filename: string;
       };
 
-      // Step 2: Get active user session for TUS authentication
-      const supabase = createClient();
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+      // Step 2: Obtain valid JWT token for Supabase Storage TUS authentication
+      let jwtToken = prepareData.accessToken;
+      if (!jwtToken) {
+        try {
+          const tokenRes = await fetch('/api/auth/token');
+          if (tokenRes.ok) {
+            const tokenData = await tokenRes.json() as { token?: string };
+            jwtToken = tokenData.token;
+          }
+        } catch {}
+      }
 
-      if (sessionError || !session) {
+      if (!jwtToken) {
         throw new Error('Your session expired. Please refresh the page and log in again.');
       }
 
@@ -147,24 +153,36 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
             cacheControl: '3600',
           },
           headers: {
-            authorization: `Bearer ${session.access_token}`,
+            authorization: `Bearer ${jwtToken}`,
             apikey: supabaseAnonKey,
           },
           uploadDataDuringCreation: true,
           removeFingerprintOnSuccess: true,
           onBeforeRequest: async (req) => {
-            // Ensure token stays valid even during multi-hour / multi-gigabyte uploads
+            // Keep token fresh for very large uploads
             try {
-              const { data: freshData } = await supabase.auth.getSession();
-              const freshToken = freshData.session?.access_token;
-              if (freshToken) {
-                req.setHeader('authorization', `Bearer ${freshToken}`);
+              const res = await fetch('/api/auth/token');
+              if (res.ok) {
+                const tokenData = await res.json() as { token?: string };
+                if (tokenData.token) {
+                  req.setHeader('authorization', `Bearer ${tokenData.token}`);
+                }
               }
             } catch {}
           },
           onError: (err) => {
             uploadRef.current = null;
-            reject(err);
+            let userMessage = 'Upload failed.';
+            if (err instanceof Error) {
+              if (err.message.includes('403') || err.message.includes('Unauthorized') || err.message.includes('JWS')) {
+                userMessage = 'Upload authorization error. Please refresh the page and log in again.';
+              } else if (err.message.includes('Network') || err.message.includes('failed to fetch')) {
+                userMessage = 'Network connection interrupted during upload. Please check your connection and try again.';
+              } else {
+                userMessage = err.message;
+              }
+            }
+            reject(new Error(userMessage));
           },
           onProgress: (bytesSent, total) => {
             const percent = Math.min(99, Math.round((bytesSent / total) * 100));

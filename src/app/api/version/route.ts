@@ -9,7 +9,7 @@ export async function GET() {
     process.env.VERCEL_GIT_COMMIT_SHA ||
     process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
     process.env.NEXT_PUBLIC_BUILD_ID ||
-    '1.4.1';
+    '1.4.2';
 
   return NextResponse.json(
     { version },

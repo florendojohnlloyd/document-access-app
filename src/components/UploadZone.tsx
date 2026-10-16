@@ -131,16 +131,14 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
         } catch {}
       }
 
-      if (!jwtToken) {
-        throw new Error('Your session expired. Please refresh the page and log in again.');
+      if (!jwtToken || typeof jwtToken !== 'string' || jwtToken.split('.').length !== 3) {
+        throw new Error('Upload session expired or invalid. Please refresh the page and log in again.');
       }
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://oidcihmopmkhjqoxrbot.supabase.co';
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-      const projectId = new URL(supabaseUrl).hostname.split('.')[0];
-      const endpoint = `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`;
+      const endpoint = `${supabaseUrl}/storage/v1/upload/resumable`;
 
-      // Step 3: Resumable chunked upload via TUS protocol (handles 300MB+, auto-retries, no 50MB Kong limit)
+      // Step 3: Resumable chunked upload via TUS protocol (handles 300MB+, auto-retries, no 50MB limit)
       await new Promise<void>((resolve, reject) => {
         const upload = new tus.Upload(selectedFile, {
           endpoint,
@@ -154,23 +152,11 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
           },
           headers: {
             authorization: `Bearer ${jwtToken}`,
-            apikey: supabaseAnonKey,
           },
           uploadDataDuringCreation: true,
           removeFingerprintOnSuccess: true,
-          onBeforeRequest: async (req) => {
-            // Keep token fresh for very large uploads
-            try {
-              const res = await fetch('/api/auth/token');
-              if (res.ok) {
-                const tokenData = await res.json() as { token?: string };
-                if (tokenData.token) {
-                  req.setHeader('authorization', `Bearer ${tokenData.token}`);
-                }
-              }
-            } catch {}
-          },
           onError: (err) => {
+            console.error('TUS upload error:', err);
             uploadRef.current = null;
             let userMessage = 'Upload failed.';
             if (err instanceof Error) {
@@ -199,16 +185,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
         });
 
         uploadRef.current = upload;
-
-        // Check if there is a previous upload to resume, otherwise start
-        upload.findPreviousUploads().then((previousUploads) => {
-          if (previousUploads.length) {
-            upload.resumeFromPreviousUpload(previousUploads[0]);
-          }
-          upload.start();
-        }).catch(() => {
-          upload.start();
-        });
+        upload.start();
       });
 
       // Step 4: Confirm upload with server to record file in database and create audit log

@@ -62,37 +62,37 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
       aria-modal="true"
       role="dialog"
       aria-labelledby="fileview-title"
     >
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[94vh] sm:h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 flex-shrink-0">
-          <h2 id="fileview-title" className="text-sm font-semibold text-slate-800 truncate max-w-xs">
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-100 flex-shrink-0 gap-2">
+          <h2 id="fileview-title" className="text-sm font-semibold text-slate-800 truncate max-w-[150px] xs:max-w-[220px] sm:max-w-md" title={fileName}>
             {fileName}
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {url && (
               <>
                 <a
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  Open
+                  <span className="hidden xs:inline sm:inline">Open</span>
                 </a>
                 <a
                   href={url}
                   download={fileName}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Download
+                  <span className="hidden xs:inline sm:inline">Download</span>
                 </a>
               </>
             )}
@@ -106,8 +106,23 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
           </div>
         </div>
 
+        {/* Mobile top helper for PDFs & Office files */}
+        {url && (isPdf || isOffice) && (
+          <div className="sm:hidden px-3 py-2 bg-indigo-50/90 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-700">
+            <span className="truncate mr-2">Mobile preview may be limited</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold underline flex items-center gap-1 flex-shrink-0 text-indigo-800"
+            >
+              Open in new tab <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        )}
+
         {/* Content */}
-        <div className="flex-1 overflow-hidden bg-slate-50">
+        <div className="flex-1 overflow-hidden bg-slate-50 flex flex-col">
           {/* Loading */}
           {loading && (
             <div className="flex items-center justify-center h-full">
@@ -120,8 +135,8 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
 
           {/* Error */}
           {!loading && error && (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-red-500 text-sm">{error}</p>
+            <div className="flex items-center justify-center h-full p-4 text-center">
+              <p className="text-red-500 text-sm font-medium">{error}</p>
             </div>
           )}
 
@@ -136,7 +151,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
 
           {/* Image */}
           {!loading && url && isImage && (
-            <div className="flex items-center justify-center h-full p-6 overflow-auto">
+            <div className="flex items-center justify-center h-full p-4 sm:p-6 overflow-auto">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
@@ -147,6 +162,8 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
           )}
 
           {/* Office files — MS Office Online viewer, falls back to download card */}
+
+
           {!loading && url && isOffice && !iframeError && (
             <iframe
               key={url}

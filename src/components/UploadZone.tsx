@@ -13,6 +13,12 @@ interface UploadZoneProps {
 
 const ACCEPTED = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.zip';
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -36,9 +42,8 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
   const handleFileSelect = (file: File) => {
     setError('');
     setSuccess('');
-    
-    // No file size limit - removed validation
-    
+
+    // No file size limit — direct Supabase upload handles large files!
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     const allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
     if (!allowed.includes(ext)) {
@@ -68,33 +73,40 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setProgress(0);
 
     try {
-      // Get Supabase client for auth token
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase configuration missing');
+      // Step 1: Request signed upload URL from prepare route (bypasses Vercel 4.5MB payload limit)
+      const prepareRes = await fetch('/api/files/prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: selectedFile.name,
+          folder_id: effectiveFolderId,
+        }),
+      });
+
+      if (!prepareRes.ok) {
+        const errData = await prepareRes.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed to prepare upload (${prepareRes.status})`);
       }
 
-      // Get session token
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
+      const prepareData = await prepareRes.json() as {
+        storagePath: string;
+        signedUrl: string;
+        token: string;
+        folder_id: string | null;
+        filename: string;
+      };
 
-      // Upload to Supabase Edge Function (NO SIZE LIMIT!)
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('folder_id', effectiveFolderId);
+      // Step 2: Upload directly to Supabase storage signed URL using XMLHttpRequest (tracks real progress)
+      const uploadForm = new FormData();
+      uploadForm.append('cacheControl', '3600');
+      uploadForm.append('', selectedFile);
 
       const xhr = new XMLHttpRequest();
 
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
-          setProgress(Math.round((e.loaded / e.total) * 100));
+          const percent = Math.min(99, Math.round((e.loaded / e.total) * 100));
+          setProgress(percent);
         }
       });
 
@@ -104,31 +116,52 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
             resolve();
           } else {
             try {
-              const data = JSON.parse(xhr.responseText) as { error?: string };
-              reject(new Error(data.error ?? `Upload failed with status ${xhr.status}`));
+              const data = JSON.parse(xhr.responseText) as { error?: string; message?: string };
+              reject(new Error(data.error ?? data.message ?? `Direct upload failed with status ${xhr.status}`));
             } catch {
-              reject(new Error(`Upload failed with status ${xhr.status}`));
+              reject(new Error(`Direct upload failed with status ${xhr.status}`));
             }
           }
         });
 
         xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'));
+          reject(new Error('Network error during upload to storage'));
         });
 
-        xhr.open('POST', '/api/files/upload-large');
-        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-        xhr.send(formData);
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload was cancelled'));
+        });
+
+        xhr.open('PUT', prepareData.signedUrl);
+        xhr.send(uploadForm);
       });
+
+      setProgress(100);
+
+      // Step 3: Confirm upload with server to record file in database and create audit log
+      const confirmRes = await fetch('/api/files/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: prepareData.filename,
+          storage_path: prepareData.storagePath,
+          folder_id: prepareData.folder_id,
+        }),
+      });
+
+      if (!confirmRes.ok) {
+        const errData = await confirmRes.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed to confirm upload (${confirmRes.status})`);
+      }
 
       setUploading(false);
       setSuccess(`"${selectedFile.name}" uploaded successfully!`);
-      
-      // Auto-clear success message after 3 seconds
+
+      // Auto-clear success message after 4 seconds
       setTimeout(() => {
         setSuccess('');
-      }, 3000);
-      
+      }, 4000);
+
       reset();
       onUploaded();
     } catch (err) {
@@ -136,16 +169,16 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
       const errorMessage = err instanceof Error ? err.message : 'Upload failed.';
       setError(errorMessage);
       console.error('Upload error:', err);
-      
-      // Auto-clear error message after 5 seconds
+
+      // Auto-clear error message after 6 seconds
       setTimeout(() => {
         setError('');
-      }, 5000);
+      }, 6000);
     }
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="w-full space-y-3">
       {/* Hidden file input */}
       <input
         ref={inputRef}
@@ -158,103 +191,136 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
         }}
       />
 
-      {/* File picker button / selected file */}
-      {!selectedFile ? (
-        <button
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors',
-            'text-slate-500 border-slate-200 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-            dragging && 'border-indigo-500 bg-indigo-50 text-indigo-600'
-          )}
-        >
-          <Paperclip className="w-4 h-4" />
-          Choose file
-          <span className="text-xs text-slate-400">PDF, DOC, XLS, PNG, JPG, ZIP</span>
-        </button>
-      ) : (
-        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-sm">
-          <Paperclip className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
-          <span className="font-medium text-indigo-700 truncate max-w-[180px]">{selectedFile.name}</span>
-          <span className="text-xs text-indigo-400 flex-shrink-0">
-            {(selectedFile.size / 1024).toFixed(1)} KB
-          </span>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-wrap">
+        {/* File picker button / selected file */}
+        {!selectedFile ? (
           <button
-            onClick={reset}
-            className="ml-1 text-indigo-300 hover:text-red-500 transition-colors flex-shrink-0"
-            aria-label="Remove file"
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={cn(
+              'w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 px-3.5 py-2.5 rounded-xl border text-sm transition-colors',
+              'text-slate-600 border-slate-200 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 bg-white',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shadow-sm',
+              dragging && 'border-indigo-500 bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200'
+            )}
           >
-            <X className="w-3.5 h-3.5" />
+            <Paperclip className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+            <span className="font-medium">Choose file</span>
+            <span className="text-xs text-slate-400 hidden xs:inline sm:inline">
+              (No size limit · PDF, DOC, XLS, PNG, JPG, ZIP)
+            </span>
           </button>
-        </div>
-      )}
+        ) : (
+          <div className="w-full sm:w-auto flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/80 text-sm shadow-sm">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Paperclip className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+              <span className="font-medium text-indigo-900 truncate max-w-[180px] sm:max-w-xs" title={selectedFile.name}>
+                {selectedFile.name}
+              </span>
+              <span className="text-xs text-indigo-600/75 bg-indigo-100/80 px-1.5 py-0.5 rounded-md font-mono flex-shrink-0">
+                {formatFileSize(selectedFile.size)}
+              </span>
+            </div>
+            {!uploading && (
+              <button
+                type="button"
+                onClick={reset}
+                className="p-1 rounded-md text-indigo-400 hover:text-red-500 hover:bg-white/60 transition-colors flex-shrink-0 ml-1"
+                aria-label="Remove selected file"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
 
-      {/* Folder selector — only show when file is selected and no folder selected from parent */}
-      {selectedFile && !selectedFolderId && (
-        <select
-          value={internalFolderId}
-          onChange={(e) => { setInternalFolderId(e.target.value); setError(''); }}
-          className={cn(
-            'px-3 py-2 rounded-lg border text-sm',
-            'bg-white text-slate-800 border-slate-200',
-            'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
-            !internalFolderId && 'border-red-300 text-slate-400'
-          )}
-          aria-label="Select folder"
-        >
-          <option value="" disabled>— Select Month / Folder —</option>
-          {folders.map((f) => (
-            <option key={f.id} value={f.id}>{f.name}</option>
-          ))}
-        </select>
-      )}
+        {/* Folder selector — show when file is selected and no folder selected from parent */}
+        {selectedFile && !selectedFolderId && (
+          <select
+            value={internalFolderId}
+            disabled={uploading}
+            onChange={(e) => { setInternalFolderId(e.target.value); setError(''); }}
+            className={cn(
+              'w-full sm:w-auto px-3.5 py-2.5 rounded-xl border text-sm transition-colors',
+              'bg-white text-slate-800 border-slate-200 shadow-sm',
+              'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
+              !internalFolderId && 'border-amber-300 text-slate-500'
+            )}
+            aria-label="Select folder"
+          >
+            <option value="" disabled>— Select Month / Folder —</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+        )}
 
-      {/* Upload button */}
-      {selectedFile && (
-        <button
-          onClick={handleUpload}
-          disabled={uploading || !effectiveFolderId}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            'bg-indigo-600 hover:bg-indigo-700 text-white',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
-          )}
-        >
-          {uploading ? (
-            <>
-              <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-              {progress > 0 ? `${progress}%` : 'Uploading...'}
-            </>
-          ) : (
-            <>
-              <Upload className="w-3.5 h-3.5" />
-              Upload
-            </>
-          )}
-        </button>
-      )}
+        {/* Upload button */}
+        {selectedFile && (
+          <button
+            type="button"
+            onClick={handleUpload}
+            disabled={uploading || !effectiveFolderId}
+            className={cn(
+              'w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
+              'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            {uploading ? (
+              <>
+                <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>{progress > 0 ? `Uploading (${progress}%)` : 'Uploading...'}</span>
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                <span>Upload</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
       {/* Progress bar */}
-      {uploading && progress > 0 && (
-        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-indigo-600 rounded-full transition-all duration-200"
-            style={{ width: `${progress}%` }}
-          />
+      {uploading && (
+        <div className="w-full space-y-1.5 pt-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Direct storage upload</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+            <div
+              className="h-full bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full transition-all duration-200"
+              style={{ width: `${Math.max(5, progress)}%` }}
+            />
+          </div>
         </div>
       )}
 
-      {/* Error / success */}
-      {error && <p className="w-full text-red-500 text-xs">{error}</p>}
-      {success && <p className="w-full text-indigo-600 text-xs font-medium">{success}</p>}
+      {/* Error / success messages */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+          <p className="flex-1 font-medium">{error}</p>
+          <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 text-xs underline">Dismiss</button>
+        </div>
+      )}
+
+      {success && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+          <p className="flex-1 font-medium">{success}</p>
+        </div>
+      )}
     </div>
   );
 }
+

@@ -138,29 +138,46 @@ export function FileTable({
                 className="hover:bg-slate-100/60 transition-colors group"
               >
                 <td className="py-3 px-4">
-                  <div className="flex items-center gap-2.5">
-                    {getFileIcon(file.name)}
-                    <button
-                      onClick={() => {
-                        setViewFileId(file.id);
-                        setViewFileName(file.name);
-                      }}
-                      className="text-indigo-600 hover:underline font-medium transition-colors text-left"
-                    >
-                      {file.name}
-                    </button>
+                  <div className="flex items-start sm:items-center gap-2.5">
+                    <div className="mt-0.5 sm:mt-0 flex-shrink-0">
+                      {getFileIcon(file.name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <button
+                        onClick={() => {
+                          setViewFileId(file.id);
+                          setViewFileName(file.name);
+                        }}
+                        className="text-indigo-600 hover:underline font-medium transition-colors text-left break-all sm:break-normal line-clamp-2 sm:line-clamp-none"
+                      >
+                        {file.name}
+                      </button>
+                      {/* Mobile metadata subline */}
+                      <div className="sm:hidden flex items-center gap-1.5 text-xs text-slate-400 mt-1 flex-wrap">
+                        {file.folder && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium text-[11px]">
+                            {file.folder.name}
+                          </span>
+                        )}
+                        {file.uploader && (
+                          <span className="truncate max-w-[120px]">{file.uploader.full_name ?? file.uploader.username}</span>
+                        )}
+                        <span>·</span>
+                        <span>{formatDate(file.created_at)}</span>
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td className="py-3 px-4 hidden sm:table-cell">
                   {file.folder ? (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-400 text-xs font-medium">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-medium">
                       {file.folder.name}
                     </span>
                   ) : (
-                    <span className="text-gray-400 dark:text-gray-500 text-xs italic">—</span>
+                    <span className="text-gray-400 text-xs italic">—</span>
                   )}
                 </td>
-                <td className="py-3 px-4 hidden md:table-cell text-slate-400">
+                <td className="py-3 px-4 hidden md:table-cell text-slate-600 text-xs">
                   {file.uploader
                     ? file.uploader.full_name ?? file.uploader.username
                     : <span className="text-gray-400 italic">—</span>}
@@ -168,17 +185,17 @@ export function FileTable({
                 <td className="py-3 px-4 hidden lg:table-cell text-slate-500 text-xs">
                   {formatDate(file.created_at)}
                 </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center justify-end gap-1.5">
+                <td className="py-3 px-3 sm:px-4">
+                  <div className="flex items-center justify-end gap-1 sm:gap-1.5">
                     <button
                       onClick={() => {
                         setViewFileId(file.id);
                         setViewFileName(file.name);
                       }}
                       className={cn(
-                        'p-1.5 rounded-lg transition-colors',
-                        'text-gray-400 hover:text-teal-primary hover:bg-teal-primary/10',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-primary'
+                        'p-2 sm:p-1.5 rounded-lg transition-colors',
+                        'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500'
                       )}
                       aria-label={`View ${file.name}`}
                     >
@@ -192,8 +209,8 @@ export function FileTable({
                           setModalMode('rename');
                         }}
                         className={cn(
-                          'p-1.5 rounded-lg transition-colors',
-                          'text-gray-400 hover:text-blue-500 hover:bg-blue-600/10',
+                          'p-2 sm:p-1.5 rounded-lg transition-colors',
+                          'text-slate-400 hover:text-blue-600 hover:bg-blue-50',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
                         )}
                         aria-label={`Rename ${file.name}`}
@@ -209,8 +226,8 @@ export function FileTable({
                           setModalMode('delete');
                         }}
                         className={cn(
-                          'p-1.5 rounded-lg transition-colors',
-                          'text-gray-400 hover:text-red-500 hover:bg-red-50',
+                          'p-2 sm:p-1.5 rounded-lg transition-colors',
+                          'text-slate-400 hover:text-red-500 hover:bg-red-50',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
                         )}
                         aria-label={`Delete ${file.name}`}
@@ -221,6 +238,7 @@ export function FileTable({
                   </div>
                 </td>
               </tr>
+
             ))}
           </tbody>
         </table>

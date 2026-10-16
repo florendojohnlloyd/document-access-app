@@ -48,8 +48,9 @@ export function Header({ profile, sidebarOpen, onToggleSidebar, onProfileUpdated
             <span className={cn('block h-0.5 bg-slate-600 rounded-full transition-all', sidebarOpen ? 'w-3' : 'w-4')} />
             <span className="block w-5 h-0.5 bg-slate-600 rounded-full" />
           </button>
-          {title && <h1 className="text-sm font-semibold text-slate-700 hidden sm:block">{title}</h1>}
+          {title && <h1 className="text-sm font-semibold text-slate-800 tracking-tight">{title}</h1>}
         </div>
+
 
         {/* Right — user + actions */}
         <div className="flex items-center gap-1">

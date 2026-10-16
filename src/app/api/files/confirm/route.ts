@@ -33,15 +33,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Filename and storage_path are required.' }, { status: 400 });
     }
 
-    // Verify the file exists in storage
-    const { data: fileList, error: listError } = await supabase.storage
+    // Verify the file exists in storage using admin client to ensure check succeeds
+    const firstSlashIndex = storage_path.indexOf('/');
+    const folder = firstSlashIndex !== -1 ? storage_path.slice(0, firstSlashIndex) : '';
+    const filePart = firstSlashIndex !== -1 ? storage_path.slice(firstSlashIndex + 1) : storage_path;
+
+    const { createServiceClient } = await import('@/lib/supabase/server');
+    const adminSupabase = createServiceClient();
+
+    const { data: fileList, error: listError } = await adminSupabase.storage
       .from('documents')
-      .list(storage_path.split('/')[0], {
-        search: storage_path.split('/')[1],
+      .list(folder, {
+        search: filePart,
       });
 
     if (listError || !fileList || fileList.length === 0) {
-      return NextResponse.json({ error: 'File not found in storage.' }, { status: 404 });
+      console.warn('File verification warning in confirm:', { listError, fileList, folder, filePart });
+      // If search had formatting differences, also check if createSignedUrl works as fallback verification
+      const { data: signedCheck } = await adminSupabase.storage
+        .from('documents')
+        .createSignedUrl(storage_path, 60);
+
+      if (!signedCheck?.signedUrl) {
+        return NextResponse.json({ error: 'File not found in storage.' }, { status: 404 });
+      }
     }
 
     // Save to database
@@ -59,6 +74,7 @@ export async function POST(request: NextRequest) {
     if (dbError) {
       return NextResponse.json({ error: dbError.message }, { status: 500 });
     }
+
 
     // Audit log
     await supabase.from('audit_logs').insert({

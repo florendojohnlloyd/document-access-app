@@ -80,7 +80,7 @@ export default function UsersPage() {
 
       {/* User table */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-sm font-semibold text-slate-800">All Users</h2>
             {!isSuperAdmin && (
@@ -89,8 +89,8 @@ export default function UsersPage() {
           </div>
 
           {/* Search */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 w-52">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 flex-1 sm:w-56">
               <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
               <input
                 type="text"
@@ -107,13 +107,14 @@ export default function UsersPage() {
                 >✕</button>
               )}
             </div>
-            <span className="text-xs text-slate-400 flex-shrink-0">
+            <span className="text-xs text-slate-400 flex-shrink-0 whitespace-nowrap">
               {loading ? '...' : search
                 ? `${filteredUsers.length} of ${users.length}`
                 : `${users.length} user${users.length !== 1 ? 's' : ''}`}
             </span>
           </div>
         </div>
+
 
         {loading ? (
           <div className="space-y-2">

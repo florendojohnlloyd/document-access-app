@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 
 const ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
@@ -8,7 +8,7 @@ function getExtension(filename: string): string {
   return filename.split('.').pop()?.toLowerCase() ?? '';
 }
 
-// Prepare upload metadata - returns path info for client-side upload
+// Prepare upload metadata - returns signed upload URL for direct Supabase upload (bypasses 4.5MB Vercel limit)
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -64,13 +64,27 @@ export async function POST(request: NextRequest) {
     const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${folderName}/${uuid}_${safeName}`;
 
+    // Create a signed upload URL via service role so client can upload directly without limits
+    const adminSupabase = createServiceClient();
+    const { data: signData, error: signError } = await adminSupabase.storage
+      .from('documents')
+      .createSignedUploadUrl(storagePath);
+
+    if (signError || !signData) {
+      console.error('Failed to create signed upload URL:', signError);
+      return NextResponse.json({ error: `Upload prep failed: ${signError?.message ?? 'Unknown'}` }, { status: 500 });
+    }
+
     return NextResponse.json({
-      storagePath: storagePath,
+      storagePath,
+      signedUrl: signData.signedUrl,
+      token: signData.token,
       folder_id: resolvedFolderId,
-      filename: filename,
+      filename,
     });
   } catch (error) {
     console.error('Prepare upload error:', error);
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });
   }
 }
+

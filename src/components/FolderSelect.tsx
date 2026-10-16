@@ -330,7 +330,7 @@ export function FolderSelect({
 
   return (
     <>
-      <div ref={ref} className="relative w-56">
+      <div ref={ref} className="relative w-full sm:w-56">
         {/* Trigger */}
         <button
           onClick={() => setOpen((v) => !v)}
@@ -355,7 +355,8 @@ export function FolderSelect({
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute top-full left-0 mt-1 w-64 z-30 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+          <div className="absolute top-full left-0 mt-1 w-full sm:w-64 max-w-[calc(100vw-2rem)] z-30 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+
             {/* Search */}
             <div className="p-2 border-b border-slate-100">
               <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200">

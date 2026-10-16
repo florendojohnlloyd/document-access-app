@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -15,21 +15,38 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export function DashboardShell({ profile: initialProfile, children }: { profile: Profile; children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Mobile: closed by default so overlay doesn't block screen. Desktop: open by default.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profile, setProfile] = useState(initialProfile);
   const pathname = usePathname();
   const title = PAGE_TITLES[pathname] ?? 'Dashboard';
   const needsName = profile.role !== 'super_admin' && !profile.name_locked && !profile.full_name;
+
+  // On mount: open sidebar on desktop screens
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setSidebarOpen(true);
+    }
+  }, []);
+
+  // On route change: automatically close on mobile
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  }, [pathname]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/30 z-20 md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 md:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
+
 
       {/* Sidebar */}
       <Sidebar

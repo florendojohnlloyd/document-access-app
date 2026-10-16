@@ -143,13 +143,18 @@ export default function FilesPage() {
       );
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Single combined card */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-xs">
 
         {/* Upload section */}
         <div>
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upload</h2>
+          <div className="flex items-center justify-between mb-2.5">
+            <h2 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Upload Files</h2>
+            <span className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+              No size limit
+            </span>
+          </div>
           <UploadZone
             folders={uploadableFolders}
             selectedFolderId={selectedFolderId}
@@ -160,32 +165,37 @@ export default function FilesPage() {
         <div className="border-t border-slate-100" />
 
         {/* Folder toolbar */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <FolderSelect
-            folders={folders}
-            selectedId={selectedFolderId}
-            onSelect={setSelectedFolderId}
-            isManager={canManageFolders}
-            canDelete={canManageFolders}
-            userBranch={profile?.branch ?? null}
-            isSuperAdmin={isSuperAdmin}
-            onFolderCreated={handleFolderCreated}
-            onFolderRenamed={handleFolderRenamed}
-            onFolderDeleted={handleFolderDeleted}
-          />
-
-          {canManageFolders && (
-            <NewFolderButton
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+            <FolderSelect
               folders={folders}
-              selectedFolderId={null}
+              selectedId={selectedFolderId}
+              onSelect={setSelectedFolderId}
+              isManager={canManageFolders}
+              canDelete={canManageFolders}
+              userBranch={profile?.branch ?? null}
+              isSuperAdmin={isSuperAdmin}
               onFolderCreated={handleFolderCreated}
+              onFolderRenamed={handleFolderRenamed}
+              onFolderDeleted={handleFolderDeleted}
             />
-          )}
 
-          <span className="ml-auto text-xs text-slate-400 flex-shrink-0">
-            {loadingFiles ? '...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
-          </span>
+            {canManageFolders && (
+              <NewFolderButton
+                folders={folders}
+                selectedFolderId={null}
+                onFolderCreated={handleFolderCreated}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between sm:justify-end gap-2 text-xs text-slate-400 flex-shrink-0">
+            <span className="font-medium text-slate-500">
+              {loadingFiles ? 'Loading files...' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
+            </span>
+          </div>
         </div>
+
 
         {/* File table */}
         <FileTable

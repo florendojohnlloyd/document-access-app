@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Files, Users, ClipboardList, BarChart3 } from 'lucide-react';
+import { Files, Users, ClipboardList, BarChart3, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Profile, Role } from '@/types';
 
@@ -30,37 +30,41 @@ export function Sidebar({ profile, isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-20 md:hidden"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
-
       <aside className={cn(
         'flex-shrink-0 flex flex-col bg-white border-r border-slate-200 h-full',
-        'transition-all duration-300 ease-in-out overflow-hidden',
+        'transition-all duration-300 ease-in-out overflow-hidden shadow-lg md:shadow-none',
         // Desktop: icon-only when closed (w-16), full when open (w-64)
         isOpen ? 'md:w-64' : 'md:w-16',
-        // Mobile: fixed overlay — translate in/out
-        'fixed top-0 left-0 z-30 md:relative md:z-auto',
+        // Mobile: fixed overlay drawer above backdrop (z-40)
+        'fixed top-0 left-0 z-40 md:relative md:z-auto',
         isOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full md:translate-x-0'
       )}>
-        {/* Logo */}
-        <div className="flex items-center h-14 px-4 border-b border-slate-200 flex-shrink-0 overflow-hidden">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <BarChart3 className="w-3.5 h-3.5 text-white" />
+        {/* Logo & mobile close button */}
+        <div className="flex items-center justify-between h-14 px-4 border-b border-slate-200 flex-shrink-0 overflow-hidden">
+          <div className="flex items-center min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-blue-500/20">
+              <BarChart3 className="w-4 h-4 text-white" />
+            </div>
+            <div className={cn(
+              'ml-3 overflow-hidden transition-all duration-300',
+              isOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 md:w-0'
+            )}>
+              <p className="text-slate-900 font-bold text-sm tracking-tight whitespace-nowrap">DocuVault</p>
+              <p className="text-slate-400 text-xs whitespace-nowrap">Document System</p>
+            </div>
           </div>
-          <div className={cn(
-            'ml-3 overflow-hidden transition-all duration-300',
-            isOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 md:w-0'
-          )}>
-            <p className="text-slate-900 font-bold text-sm tracking-tight whitespace-nowrap">DocuVault</p>
-            <p className="text-slate-400 text-xs whitespace-nowrap">Document System</p>
-          </div>
+          {/* Close button on mobile */}
+          {isOpen && (
+            <button
+              onClick={onClose}
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors ml-auto flex-shrink-0"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
+
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">

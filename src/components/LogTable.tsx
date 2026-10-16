@@ -107,12 +107,19 @@ export function LogTable({ logs }: LogTableProps) {
               key={log.id}
               className="hover:bg-slate-100/60 transition-colors"
             >
-              <td className="py-3 px-4 text-xs text-slate-500  whitespace-nowrap">
-                {formatDate(log.created_at)}
+              <td className="py-3 px-4">
+                <div className="text-xs text-slate-500 whitespace-nowrap font-mono">
+                  {formatDate(log.created_at)}
+                </div>
+                {/* Mobile actor and detail info */}
+                <div className="sm:hidden text-xs text-slate-500 mt-1 space-y-0.5">
+                  <p className="font-medium text-slate-800">by {log.actor_name ?? 'System'}</p>
+                  {log.detail && <p className="text-slate-500 break-words line-clamp-2">{log.detail}</p>}
+                </div>
               </td>
               <td className="py-3 px-4 hidden sm:table-cell">
                 <div>
-                  <span className="font-medium text-slate-800 ">
+                  <span className="font-medium text-slate-800">
                     {log.actor_name ?? '—'}
                   </span>
                 </div>
@@ -120,11 +127,12 @@ export function LogTable({ logs }: LogTableProps) {
               <td className="py-3 px-4">
                 <ActionBadge action={log.action} />
               </td>
-              <td className="py-3 px-4 hidden md:table-cell text-slate-500  text-xs">
+              <td className="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">
                 {log.detail ?? '—'}
               </td>
             </tr>
           ))}
+
         </tbody>
       </table>
     </div>

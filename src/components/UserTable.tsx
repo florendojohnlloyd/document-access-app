@@ -200,12 +200,24 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
             {users.map((user) => (
               <tr key={user.id} className={cn('hover:bg-slate-50 transition-colors', user.id === currentUserId && 'bg-indigo-50/50')}>
                 <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-indigo-600/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium text-indigo-600">{user.username.charAt(0).toUpperCase()}</span>
+                  <div className="flex items-start sm:items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-indigo-600/10 flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
+                      <span className="text-xs font-semibold text-indigo-600">{user.username.charAt(0).toUpperCase()}</span>
                     </div>
-                    <span className="font-medium text-slate-800">{user.username}</span>
-                    {user.id === currentUserId && <span className="text-xs text-slate-400">(you)</span>}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-slate-800">{user.username}</span>
+                        {user.id === currentUserId && <span className="text-xs text-indigo-600 font-medium bg-indigo-50 px-1.5 py-0.5 rounded">(you)</span>}
+                      </div>
+                      <div className="sm:hidden text-xs text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                        {user.full_name && <span className="text-slate-600 font-medium">{user.full_name}</span>}
+                        {user.branch && (
+                          <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[11px] font-medium">
+                            {user.branch}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td className="py-3 px-4 hidden sm:table-cell text-slate-500">
@@ -219,13 +231,13 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
                 </td>
                 <td className="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">{formatDate(user.created_at)}</td>
                 {(canEdit || canDelete) && (
-                  <td className="py-3 px-4">
-                    <div className="flex items-center justify-end gap-1">
+                  <td className="py-3 px-3 sm:px-4">
+                    <div className="flex items-center justify-end gap-1 sm:gap-1.5">
                       {/* Edit button — super_admin, not self */}
                       {canEdit && user.id !== currentUserId && (
                         <button
                           onClick={() => setEditTarget(user)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                          className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                           aria-label={`Edit ${user.username}`}
                         >
                           <Pencil className="w-4 h-4" />
@@ -235,7 +247,7 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
                       {canDelete && user.id !== currentUserId && (user.role !== 'super_admin' || canDeleteSuperAdmin) && (
                         <button
                           onClick={() => { setDeleteTarget(user); setError(''); }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                           aria-label={`Delete ${user.username}`}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -244,6 +256,7 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
                     </div>
                   </td>
                 )}
+
               </tr>
             ))}
           </tbody>

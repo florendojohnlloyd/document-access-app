@@ -130,9 +130,9 @@ export default function LogsPage() {
         </div>
 
         {/* Filter row */}
-        <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 mb-4">
           {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 w-52">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 w-full sm:w-64">
             <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             <input
               type="text"
@@ -146,41 +146,45 @@ export default function LogsPage() {
             )}
           </div>
 
-          {/* From date */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">From</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              max={toDate || undefined}
-              className={inputClass}
-            />
-          </div>
+          {/* Date range container */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* From date */}
+            <div className="flex flex-col gap-1 flex-1 sm:flex-initial">
+              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">From</label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                max={toDate || undefined}
+                className={inputClass}
+              />
+            </div>
 
-          {/* To date */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">To</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              min={fromDate || undefined}
-              className={inputClass}
-            />
+            {/* To date */}
+            <div className="flex flex-col gap-1 flex-1 sm:flex-initial">
+              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">To</label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                min={fromDate || undefined}
+                className={inputClass}
+              />
+            </div>
           </div>
 
           {/* Clear all */}
           {hasFilter && (
             <button
               onClick={clearAll}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 border border-slate-200 transition-colors"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 border border-slate-200 transition-colors w-full sm:w-auto mt-1 sm:mt-0"
             >
               <X className="w-3.5 h-3.5" />
-              Clear
+              Clear filters
             </button>
           )}
         </div>
+
 
         {/* Table */}
         {loading && logs.length === 0 ? (

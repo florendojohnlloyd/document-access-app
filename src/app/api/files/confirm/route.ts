@@ -25,37 +25,71 @@ export async function POST(request: NextRequest) {
       filename?: string;
       storage_path?: string;
       folder_id?: string;
+      is_multipart?: boolean;
+      total_parts?: number;
+      file_size?: number;
+      content_type?: string;
     };
 
-    const { filename, storage_path, folder_id } = body;
+    const { filename, storage_path, folder_id, is_multipart, total_parts, file_size, content_type } = body;
 
     if (!filename || !storage_path) {
       return NextResponse.json({ error: 'Filename and storage_path are required.' }, { status: 400 });
     }
 
-    // Verify the file exists in storage using admin client to ensure check succeeds
-    const firstSlashIndex = storage_path.indexOf('/');
-    const folder = firstSlashIndex !== -1 ? storage_path.slice(0, firstSlashIndex) : '';
-    const filePart = firstSlashIndex !== -1 ? storage_path.slice(firstSlashIndex + 1) : storage_path;
-
     const { createServiceClient } = await import('@/lib/supabase/server');
     const adminSupabase = createServiceClient();
 
-    const { data: fileList, error: listError } = await adminSupabase.storage
-      .from('documents')
-      .list(folder, {
-        search: filePart,
-      });
-
-    if (listError || !fileList || fileList.length === 0) {
-      console.warn('File verification warning in confirm:', { listError, fileList, folder, filePart });
-      // If search had formatting differences, also check if createSignedUrl works as fallback verification
-      const { data: signedCheck } = await adminSupabase.storage
+    if (is_multipart && total_parts && total_parts > 0) {
+      // Verify the first part exists in storage
+      const firstPartPath = `${storage_path}.part_0`;
+      const { data: partCheck } = await adminSupabase.storage
         .from('documents')
-        .createSignedUrl(storage_path, 60);
+        .createSignedUrl(firstPartPath, 60);
 
-      if (!signedCheck?.signedUrl) {
-        return NextResponse.json({ error: 'File not found in storage.' }, { status: 404 });
+      if (!partCheck?.signedUrl) {
+        return NextResponse.json({ error: 'Multipart upload parts not found in storage.' }, { status: 404 });
+      }
+
+      // Create and upload manifest metadata
+      const manifest = {
+        filename,
+        totalSize: file_size || 0,
+        partSize: 40 * 1024 * 1024,
+        totalParts: total_parts,
+        contentType: content_type || 'application/octet-stream',
+        createdAt: new Date().toISOString(),
+      };
+
+      const manifestBuffer = Buffer.from(JSON.stringify(manifest, null, 2), 'utf-8');
+      const { error: manifestErr } = await adminSupabase.storage
+        .from('documents')
+        .upload(`${storage_path}.manifest.json`, manifestBuffer, {
+          contentType: 'application/json',
+          upsert: true,
+        });
+
+      if (manifestErr) {
+        console.error('Error saving multipart manifest:', manifestErr);
+      }
+    } else {
+      // Single file verification
+      const firstSlashIndex = storage_path.indexOf('/');
+      const folder = firstSlashIndex !== -1 ? storage_path.slice(0, firstSlashIndex) : '';
+      const filePart = firstSlashIndex !== -1 ? storage_path.slice(firstSlashIndex + 1) : storage_path;
+
+      const { data: fileList, error: listError } = await adminSupabase.storage
+        .from('documents')
+        .list(folder, { search: filePart });
+
+      if (listError || !fileList || fileList.length === 0) {
+        const { data: signedCheck } = await adminSupabase.storage
+          .from('documents')
+          .createSignedUrl(storage_path, 60);
+
+        if (!signedCheck?.signedUrl) {
+          return NextResponse.json({ error: 'File not found in storage.' }, { status: 404 });
+        }
       }
     }
 

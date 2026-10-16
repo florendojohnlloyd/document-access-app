@@ -22,11 +22,34 @@ function FileTypeIcon({ ext }: { ext: string }) {
   return <File className="w-10 h-10 text-slate-400" />;
 }
 
+interface MultipartManifest {
+  filename: string;
+  totalSize: number;
+  partSize: number;
+  totalParts: number;
+  contentType?: string;
+}
+
+interface MultipartData {
+  manifest: MultipartManifest;
+  signedUrls: string[];
+}
+
+function formatFileSize(bytes: number) {
+  if (!bytes) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps) {
   const [url, setUrl] = useState<string | null>(null);
+  const [multipartData, setMultipartData] = useState<MultipartData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [iframeError, setIframeError] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({ part: 0, total: 0, percent: 0 });
 
   const ext = getExtension(fileName);
   const isPdf = ext === 'pdf';
@@ -37,11 +60,25 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
     const fetchUrl = async () => {
       try {
         const res = await fetch(`/api/files/${fileId}/url`);
-        const data = await res.json() as { url: string } | { error: string };
-        if (!res.ok || 'error' in data) {
-          setError(('error' in data ? data.error : null) ?? 'Could not load file.');
+        const data = await res.json() as {
+          isMultipart?: boolean;
+          manifest?: MultipartManifest;
+          signedUrls?: string[];
+          url?: string;
+          error?: string;
+        };
+
+        if (!res.ok || data.error) {
+          setError(data.error ?? 'Could not load file.');
+        } else if (data.isMultipart && data.manifest && data.signedUrls) {
+          setMultipartData({
+            manifest: data.manifest,
+            signedUrls: data.signedUrls,
+          });
+        } else if (data.url) {
+          setUrl(data.url);
         } else {
-          setUrl((data as { url: string }).url);
+          setError('File location not found.');
         }
       } catch {
         setError('Network error loading file.');
@@ -60,6 +97,56 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  const handleDownload = async () => {
+    if (multipartData) {
+      setDownloading(true);
+      try {
+        const partsCount = multipartData.signedUrls.length;
+        const blobs: Blob[] = [];
+
+        for (let i = 0; i < partsCount; i++) {
+          setDownloadProgress({
+            part: i + 1,
+            total: partsCount,
+            percent: Math.round(((i) / partsCount) * 100),
+          });
+
+          const partRes = await fetch(multipartData.signedUrls[i]);
+          if (!partRes.ok) throw new Error(`Failed to download part ${i + 1}`);
+          const partBlob = await partRes.blob();
+          blobs.push(partBlob);
+        }
+
+        setDownloadProgress({ part: partsCount, total: partsCount, percent: 100 });
+        const mergedBlob = new Blob(blobs, {
+          type: multipartData.manifest.contentType || 'application/octet-stream',
+        });
+        const blobUrl = URL.createObjectURL(mergedBlob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.error('Download error:', err);
+        setError('Failed to download multipart file. Please try again.');
+      } finally {
+        setDownloading(false);
+      }
+    } else if (url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm"
@@ -71,29 +158,41 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[94vh] sm:h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-100 flex-shrink-0 gap-2">
-          <h2 id="fileview-title" className="text-sm font-semibold text-slate-800 truncate max-w-[150px] xs:max-w-[220px] sm:max-w-md" title={fileName}>
-            {fileName}
-          </h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 id="fileview-title" className="text-sm font-semibold text-slate-800 truncate max-w-[150px] xs:max-w-[220px] sm:max-w-md" title={fileName}>
+              {fileName}
+            </h2>
+            {multipartData?.manifest?.totalSize && (
+              <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-mono font-medium hidden sm:inline">
+                {formatFileSize(multipartData.manifest.totalSize)}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {url && (
+            {!loading && (url || multipartData) && (
               <>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline sm:inline">Open</span>
-                </a>
-                <a
-                  href={url}
-                  download={fileName}
-                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                {url && (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline sm:inline">Open</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline sm:inline">Download</span>
-                </a>
+                  <span className="hidden xs:inline sm:inline">
+                    {downloading ? 'Downloading...' : 'Download'}
+                  </span>
+                </button>
               </>
             )}
             <button
@@ -140,6 +239,46 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
             </div>
           )}
 
+          {/* Multipart file view (e.g. large ZIP / backup / video) */}
+          {!loading && multipartData && (
+            <div className="flex flex-col items-center justify-center h-full gap-5 p-6 text-center">
+              <FileTypeIcon ext={ext} />
+              <div className="space-y-1">
+                <p className="text-slate-800 font-semibold text-base">{fileName}</p>
+                <p className="text-slate-500 text-xs font-mono">
+                  {formatFileSize(multipartData.manifest.totalSize)} · Large Archive ({multipartData.manifest.totalParts} parts)
+                </p>
+                <p className="text-slate-400 text-xs">
+                  This file was securely uploaded in multi-part chunks.
+                </p>
+              </div>
+
+              {downloading ? (
+                <div className="w-full max-w-xs space-y-2 pt-2">
+                  <div className="flex justify-between text-xs text-slate-500 font-medium">
+                    <span>Downloading part {downloadProgress.part} of {downloadProgress.total}...</span>
+                    <span className="font-semibold text-indigo-600">{downloadProgress.percent}%</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full transition-all duration-200"
+                      style={{ width: `${Math.max(5, downloadProgress.percent)}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Download File ({formatFileSize(multipartData.manifest.totalSize)})
+                </button>
+              )}
+            </div>
+          )}
+
           {/* PDF — direct iframe */}
           {!loading && url && isPdf && (
             <iframe
@@ -162,8 +301,6 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
           )}
 
           {/* Office files — MS Office Online viewer, falls back to download card */}
-
-
           {!loading && url && isOffice && !iframeError && (
             <iframe
               key={url}
@@ -194,14 +331,14 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                   <ExternalLink className="w-4 h-4" />
                   Open in new tab
                 </a>
-                <a
-                  href={url}
-                  download={fileName}
+                <button
+                  type="button"
+                  onClick={handleDownload}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Download
-                </a>
+                </button>
               </div>
             </div>
           )}

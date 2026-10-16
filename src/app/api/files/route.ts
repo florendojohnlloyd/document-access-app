@@ -152,13 +152,32 @@ export async function DELETE(request: NextRequest) {
     if (!file) return NextResponse.json({ error: 'File not found.' }, { status: 404 });
 
     // Delete from storage
-    const { error: storageError } = await supabase.storage
+    const { createServiceClient } = await import('@/lib/supabase/server');
+    const adminSupabase = createServiceClient();
+
+    const pathsToDelete = [file.storage_path, `${file.storage_path}.manifest.json`];
+    try {
+      const { data: manifestBlob } = await adminSupabase.storage
+        .from('documents')
+        .download(`${file.storage_path}.manifest.json`);
+
+      if (manifestBlob) {
+        const text = await manifestBlob.text();
+        const manifest = JSON.parse(text);
+        if (manifest?.totalParts) {
+          for (let i = 0; i < manifest.totalParts; i++) {
+            pathsToDelete.push(`${file.storage_path}.part_${i}`);
+          }
+        }
+      }
+    } catch {}
+
+    const { error: storageError } = await adminSupabase.storage
       .from('documents')
-      .remove([file.storage_path]);
+      .remove(pathsToDelete);
 
     if (storageError) {
       console.error('Storage delete error:', storageError);
-      // Continue with database delete even if storage delete fails
     }
 
     // Delete from database

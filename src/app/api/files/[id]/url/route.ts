@@ -26,12 +26,48 @@ export async function GET(
       return NextResponse.json({ error: 'File not found.' }, { status: 404 });
     }
 
-    const { data: signedUrlData, error } = await supabase.storage
-      .from('documents')
-      .createSignedUrl(file.storage_path, 3600); // 1 hour expiry
+    const { createServiceClient } = await import('@/lib/supabase/server');
+    const adminSupabase = createServiceClient();
 
-    if (error || !signedUrlData) {
-      return NextResponse.json({ error: 'Could not generate signed URL.' }, { status: 500 });
+    // Check if this is a multipart file with a manifest
+    const { data: manifestBlob } = await adminSupabase.storage
+      .from('documents')
+      .download(`${file.storage_path}.manifest.json`);
+
+    let isMultipart = false;
+    let manifestData = null;
+    let signedUrls: string[] = [];
+
+    if (manifestBlob) {
+      try {
+        const text = await manifestBlob.text();
+        manifestData = JSON.parse(text);
+        if (manifestData?.totalParts && manifestData.totalParts > 0) {
+          isMultipart = true;
+          for (let i = 0; i < manifestData.totalParts; i++) {
+            const { data: partSign } = await adminSupabase.storage
+              .from('documents')
+              .createSignedUrl(`${file.storage_path}.part_${i}`, 3600);
+            if (partSign?.signedUrl) {
+              signedUrls.push(partSign.signedUrl);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to parse multipart manifest:', err);
+      }
+    }
+
+    let singleUrl = '';
+    if (!isMultipart) {
+      const { data: signedUrlData, error } = await adminSupabase.storage
+        .from('documents')
+        .createSignedUrl(file.storage_path, 3600);
+
+      if (error || !signedUrlData) {
+        return NextResponse.json({ error: 'Could not generate signed URL.' }, { status: 500 });
+      }
+      singleUrl = signedUrlData.signedUrl;
     }
 
     // Log the VIEW action in the audit trail
@@ -48,7 +84,20 @@ export async function GET(
       detail: `Viewed file: ${file.name}`,
     });
 
-    return NextResponse.json({ url: signedUrlData.signedUrl, name: file.name });
+    if (isMultipart) {
+      return NextResponse.json({
+        isMultipart: true,
+        manifest: manifestData,
+        signedUrls,
+        name: file.name,
+      });
+    }
+
+    return NextResponse.json({
+      isMultipart: false,
+      url: singleUrl,
+      name: file.name,
+    });
   } catch {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });
   }

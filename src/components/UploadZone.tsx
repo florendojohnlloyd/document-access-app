@@ -34,6 +34,8 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const [statusText, setStatusText] = useState('');
+
   const effectiveFolderId = selectedFolderId || internalFolderId;
 
   const reset = () => {
@@ -46,6 +48,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setBytesUploaded(0);
     setBytesTotal(0);
     setError('');
+    setStatusText('');
     setInternalFolderId('');
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -59,6 +62,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setProgress(0);
     setBytesUploaded(0);
     setBytesTotal(0);
+    setStatusText('');
     setError('Upload cancelled.');
     setTimeout(() => setError(''), 4000);
   };
@@ -95,6 +99,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
     setProgress(0);
     setBytesUploaded(0);
     setBytesTotal(selectedFile.size);
+    setStatusText('Preparing upload...');
 
     try {
       // Step 1: Request storage path and metadata from prepare route
@@ -138,55 +143,104 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://oidcihmopmkhjqoxrbot.supabase.co';
       const endpoint = `${supabaseUrl}/storage/v1/upload/resumable`;
 
-      // Step 3: Resumable chunked upload via TUS protocol (handles 300MB+, auto-retries, no 50MB limit)
-      await new Promise<void>((resolve, reject) => {
-        const upload = new tus.Upload(selectedFile, {
-          endpoint,
-          retryDelays: [0, 3000, 5000, 10000, 20000],
-          chunkSize: 6 * 1024 * 1024, // 6MB chunks recommended by Supabase
-          metadata: {
-            bucketName: 'documents',
-            objectName: prepareData.storagePath,
-            contentType: selectedFile.type || 'application/octet-stream',
-            cacheControl: '3600',
-          },
-          headers: {
-            authorization: `Bearer ${jwtToken}`,
-          },
-          uploadDataDuringCreation: true,
-          removeFingerprintOnSuccess: true,
-          onError: (err) => {
-            console.error('TUS upload error:', err);
-            uploadRef.current = null;
-            let userMessage = 'Upload failed.';
-            if (err instanceof Error) {
-              if (err.message.includes('403') || err.message.includes('Unauthorized') || err.message.includes('JWS')) {
-                userMessage = 'Upload authorization error. Please refresh the page and log in again.';
-              } else if (err.message.includes('Network') || err.message.includes('failed to fetch')) {
-                userMessage = 'Network connection interrupted during upload. Please check your connection and try again.';
-              } else {
-                userMessage = err.message;
-              }
-            }
-            reject(new Error(userMessage));
-          },
-          onProgress: (bytesSent, total) => {
-            const percent = Math.min(99, Math.round((bytesSent / total) * 100));
-            setProgress(percent);
-            setBytesUploaded(bytesSent);
-            setBytesTotal(total);
-          },
-          onSuccess: () => {
-            uploadRef.current = null;
-            setProgress(100);
-            setBytesUploaded(selectedFile.size);
-            resolve();
-          },
-        });
+      // Threshold for Supabase Free tier: files > 40MB are sliced into 38MB parts to completely bypass the 50MB limit
+      const MULTIPART_THRESHOLD = 40 * 1024 * 1024; // 40 MB
+      const PART_SIZE = 38 * 1024 * 1024; // 38 MB per part
+      const isMultipart = selectedFile.size > MULTIPART_THRESHOLD;
+      const totalParts = isMultipart ? Math.ceil(selectedFile.size / PART_SIZE) : 1;
 
-        uploadRef.current = upload;
-        upload.start();
-      });
+      if (isMultipart) {
+        // Multi-part sliced TUS upload (supports unlimited size: 300MB, 1GB, 5GB+)
+        for (let partIndex = 0; partIndex < totalParts; partIndex++) {
+          const start = partIndex * PART_SIZE;
+          const end = Math.min(selectedFile.size, (partIndex + 1) * PART_SIZE);
+          const partBlob = selectedFile.slice(start, end);
+          const partStoragePath = `${prepareData.storagePath}.part_${partIndex}`;
+
+          setStatusText(`Uploading part ${partIndex + 1} of ${totalParts}...`);
+
+          await new Promise<void>((resolve, reject) => {
+            const upload = new tus.Upload(partBlob, {
+              endpoint,
+              retryDelays: [0, 3000, 5000, 10000, 20000],
+              chunkSize: 6 * 1024 * 1024,
+              metadata: {
+                bucketName: 'documents',
+                objectName: partStoragePath,
+                contentType: 'application/octet-stream',
+                cacheControl: '3600',
+              },
+              headers: {
+                authorization: `Bearer ${jwtToken}`,
+              },
+              uploadDataDuringCreation: true,
+              removeFingerprintOnSuccess: true,
+              onError: (err) => {
+                console.error(`TUS part ${partIndex} error:`, err);
+                uploadRef.current = null;
+                reject(err);
+              },
+              onProgress: (bytesSent) => {
+                const totalBytes = start + bytesSent;
+                const percent = Math.min(99, Math.round((totalBytes / selectedFile.size) * 100));
+                setProgress(percent);
+                setBytesUploaded(totalBytes);
+                setBytesTotal(selectedFile.size);
+              },
+              onSuccess: () => {
+                uploadRef.current = null;
+                resolve();
+              },
+            });
+
+            uploadRef.current = upload;
+            upload.start();
+          });
+        }
+      } else {
+        // Standard single TUS upload (<= 40MB)
+        setStatusText('Uploading file...');
+        await new Promise<void>((resolve, reject) => {
+          const upload = new tus.Upload(selectedFile, {
+            endpoint,
+            retryDelays: [0, 3000, 5000, 10000, 20000],
+            chunkSize: 6 * 1024 * 1024,
+            metadata: {
+              bucketName: 'documents',
+              objectName: prepareData.storagePath,
+              contentType: selectedFile.type || 'application/octet-stream',
+              cacheControl: '3600',
+            },
+            headers: {
+              authorization: `Bearer ${jwtToken}`,
+            },
+            uploadDataDuringCreation: true,
+            removeFingerprintOnSuccess: true,
+            onError: (err) => {
+              console.error('TUS upload error:', err);
+              uploadRef.current = null;
+              reject(err);
+            },
+            onProgress: (bytesSent, total) => {
+              const percent = Math.min(99, Math.round((bytesSent / total) * 100));
+              setProgress(percent);
+              setBytesUploaded(bytesSent);
+              setBytesTotal(total);
+            },
+            onSuccess: () => {
+              uploadRef.current = null;
+              setProgress(100);
+              setBytesUploaded(selectedFile.size);
+              resolve();
+            },
+          });
+
+          uploadRef.current = upload;
+          upload.start();
+        });
+      }
+
+      setStatusText('Finalizing upload...');
 
       // Step 4: Confirm upload with server to record file in database and create audit log
       const confirmRes = await fetch('/api/files/confirm', {
@@ -196,6 +250,10 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
           filename: prepareData.filename,
           storage_path: prepareData.storagePath,
           folder_id: prepareData.folder_id,
+          is_multipart: isMultipart,
+          total_parts: totalParts,
+          file_size: selectedFile.size,
+          content_type: selectedFile.type || 'application/octet-stream',
         }),
       });
 
@@ -205,6 +263,8 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
       }
 
       setUploading(false);
+      setProgress(100);
+      setStatusText('');
       setSuccess(`"${selectedFile.name}" (${formatFileSize(selectedFile.size)}) uploaded successfully!`);
 
       setTimeout(() => {
@@ -355,7 +415,7 @@ export function UploadZone({ folders, onUploaded, selectedFolderId }: UploadZone
         <div className="w-full space-y-1.5 pt-1">
           <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
             <span>
-              Resumable upload · {formatFileSize(bytesUploaded)} of {formatFileSize(bytesTotal || selectedFile?.size || 0)}
+              {statusText || 'Resumable upload'} · {formatFileSize(bytesUploaded)} of {formatFileSize(bytesTotal || selectedFile?.size || 0)}
             </span>
             <span className="font-semibold text-indigo-600">{progress}%</span>
           </div>

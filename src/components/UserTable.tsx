@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trash2, ShieldCheck, Shield, User, Pencil, X, Save } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { Modal } from './Modal';
+import { Pagination } from './Pagination';
 import { BRANCHES } from '@/types';
 import type { Profile, Role, Branch } from '@/types';
 
@@ -12,6 +13,7 @@ interface UserTableProps {
   currentUserId: string;
   currentUserRole: Role;
   currentUsername: string;
+  filterKey?: string;
   onDeleted: (id: string) => void;
   onUpdated: (updated: Profile) => void;
 }
@@ -154,10 +156,24 @@ function EditUserModal({ user, onSaved, onClose }: { user: Profile; onSaved: (u:
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function UserTable({ users, currentUserId, currentUserRole, currentUsername, onDeleted, onUpdated }: UserTableProps) {
+export function UserTable({ users, currentUserId, currentUserRole, currentUsername, filterKey, onDeleted, onUpdated }: UserTableProps) {
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [error, setError] = useState('');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterKey]);
+
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedUsers = useMemo(() => users.slice(startIndex, endIndex), [users, startIndex, endIndex]);
 
   const canEdit = currentUserRole === 'super_admin';
   const canDelete = currentUserRole === 'super_admin';
@@ -206,7 +222,7 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {users.map((user) => (
+            {paginatedUsers.map((user) => (
               <tr key={user.id} className={cn('hover:bg-slate-50 transition-colors', user.id === currentUserId && 'bg-indigo-50/50')}>
                 <td className="py-3 px-4">
                   <div className="flex items-start sm:items-center gap-2.5">
@@ -271,6 +287,15 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={safeCurrentPage}
+        totalItems={users.length}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+        itemLabel="user"
+      />
 
       {/* Delete confirmation */}
       {deleteTarget && (

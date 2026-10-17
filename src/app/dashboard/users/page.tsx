@@ -132,6 +132,7 @@ export default function UsersPage() {
             currentUserId={currentProfile.id}
             currentUserRole={currentProfile.role}
             currentUsername={currentProfile.username}
+            filterKey={search}
             onDeleted={(id) => setUsers((prev) => prev.filter((u) => u.id !== id))}
             onUpdated={(updated) => setUsers((prev) => prev.map((u) => u.id === updated.id ? updated : u))}
           />

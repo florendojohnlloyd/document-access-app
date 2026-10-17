@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function getSession() {
@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data: folder, error } = await supabase
+    const serviceClient = createServiceClient();
+    const { data: folder, error } = await serviceClient
       .from('folders')
       .insert({
         name: name.trim(),
@@ -148,7 +149,8 @@ export async function PATCH(request: NextRequest) {
 
     const { data: oldFolder } = await supabase.from('folders').select('name').eq('id', id).single();
 
-    const { data: folder, error } = await supabase
+    const serviceClient = createServiceClient();
+    const { data: folder, error } = await serviceClient
       .from('folders')
       .update({ name: name.trim() })
       .eq('id', id)
@@ -218,7 +220,8 @@ export async function DELETE(request: NextRequest) {
 
     const { data: folder } = await supabase.from('folders').select('name').eq('id', id).single();
 
-    const { error } = await supabase.from('folders').delete().eq('id', id);
+    const serviceClient = createServiceClient();
+    const { error } = await serviceClient.from('folders').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await supabase.from('audit_logs').insert({

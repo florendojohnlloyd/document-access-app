@@ -1,11 +1,14 @@
 'use client';
 
+import { useState, useMemo, useEffect } from 'react';
 import { ClipboardList } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
+import { Pagination } from './Pagination';
 import type { AuditLog, ActionType } from '@/types';
 
 interface LogTableProps {
   logs: AuditLog[];
+  filterKey?: string;
 }
 
 const ACTION_STYLES: Record<ActionType, { label: string; className: string }> = {
@@ -76,66 +79,89 @@ function ActionBadge({ action }: { action: ActionType }) {
   );
 }
 
-export function LogTable({ logs }: LogTableProps) {
+export function LogTable({ logs, filterKey }: LogTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterKey]);
+
+  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedLogs = useMemo(() => logs.slice(startIndex, endIndex), [logs, startIndex, endIndex]);
+
   if (logs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <ClipboardList className="w-10 h-10 text-slate-500  mb-2" />
-        <p className="text-slate-500 ">No audit logs yet.</p>
+        <ClipboardList className="w-10 h-10 text-slate-500 mb-2" />
+        <p className="text-slate-500">No audit logs yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200">
-            <th className="text-left py-3 px-4 font-medium text-slate-500">Timestamp</th>
-            <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">
-              Actor
-            </th>
-            <th className="text-left py-3 px-4 font-medium text-slate-500">Action</th>
-            <th className="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">
-              Detail
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {logs.map((log) => (
-            <tr
-              key={log.id}
-              className="hover:bg-slate-100/60 transition-colors"
-            >
-              <td className="py-3 px-4">
-                <div className="text-xs text-slate-500 whitespace-nowrap font-mono">
-                  {formatDate(log.created_at)}
-                </div>
-                {/* Mobile actor and detail info */}
-                <div className="sm:hidden text-xs text-slate-500 mt-1 space-y-0.5">
-                  <p className="font-medium text-slate-800">by {log.actor_name ?? 'System'}</p>
-                  {log.detail && <p className="text-slate-500 break-words line-clamp-2">{log.detail}</p>}
-                </div>
-              </td>
-              <td className="py-3 px-4 hidden sm:table-cell">
-                <div>
-                  <span className="font-medium text-slate-800">
-                    {log.actor_name ?? '—'}
-                  </span>
-                </div>
-              </td>
-              <td className="py-3 px-4">
-                <ActionBadge action={log.action} />
-              </td>
-              <td className="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">
-                {log.detail ?? '—'}
-              </td>
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200">
+              <th className="text-left py-3 px-4 font-medium text-slate-500">Timestamp</th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">
+                Actor
+              </th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500">Action</th>
+              <th className="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">
+                Detail
+              </th>
             </tr>
-          ))}
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {paginatedLogs.map((log) => (
+              <tr
+                key={log.id}
+                className="hover:bg-slate-100/60 transition-colors"
+              >
+                <td className="py-3 px-4">
+                  <div className="text-xs text-slate-500 whitespace-nowrap font-mono">
+                    {formatDate(log.created_at)}
+                  </div>
+                  {/* Mobile actor and detail info */}
+                  <div className="sm:hidden text-xs text-slate-500 mt-1 space-y-0.5">
+                    <p className="font-medium text-slate-800">by {log.actor_name ?? 'System'}</p>
+                    {log.detail && <p className="text-slate-500 break-words line-clamp-2">{log.detail}</p>}
+                  </div>
+                </td>
+                <td className="py-3 px-4 hidden sm:table-cell">
+                  <div>
+                    <span className="font-medium text-slate-800">
+                      {log.actor_name ?? '—'}
+                    </span>
+                  </div>
+                </td>
+                <td className="py-3 px-4">
+                  <ActionBadge action={log.action} />
+                </td>
+                <td className="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">
+                  {log.detail ?? '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-        </tbody>
-      </table>
-    </div>
+      <Pagination
+        currentPage={safeCurrentPage}
+        totalItems={logs.length}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+        itemLabel="log"
+      />
+    </>
   );
 }
 

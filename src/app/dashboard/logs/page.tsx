@@ -198,7 +198,7 @@ export default function LogsPage() {
             ))}
           </div>
         ) : (
-          <LogTable logs={filteredLogs} />
+          <LogTable logs={filteredLogs} filterKey={`${fromDate}-${toDate}-${search}`} />
         )}
       </div>
     </div>

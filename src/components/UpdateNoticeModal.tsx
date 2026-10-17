@@ -19,16 +19,6 @@ import { cn } from '@/lib/utils';
 //   3. Deploy — the toast will auto-show on next poll (within 60s)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NOTICE = {
-  title: 'DocuVault Updated (v1.4.0)',
-  items: [
-    'Unlimited file size support: Upload 300MB+ ZIP/PDF files seamlessly',
-    'Resumable chunked uploads (TUS protocol) — no more upload fails or timeouts',
-    'Live upload progress showing MB uploaded vs total with Cancel option',
-    'Added support for CSV (.csv) and TXT (.txt) files',
-  ],
-};
-
 const CLIENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || null;
 const DISMISSED_KEY_PREFIX = 'docuvault_dismissed_';
 const POLL_INTERVAL_MS = 10_000; // Check every 10 seconds
@@ -113,53 +103,46 @@ export function UpdateNoticeToast() {
   return (
     <div
       className={cn(
-        'fixed bottom-5 right-5 z-50 w-80',
+        'fixed bottom-5 right-5 z-50 w-auto max-w-sm',
         'transition-all duration-300 ease-out',
         hiding ? 'translate-x-[110%] opacity-0' : 'translate-x-0 opacity-100'
       )}
       role="alert"
       aria-live="polite"
     >
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-900">{NOTICE.title} 🎉</p>
-                <p className="text-xs text-slate-400">
-                  {newVersion.length > 8 ? 'New version available' : `v${newVersion} is available`}
-                </p>
-              </div>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden p-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0 shadow-xs shadow-indigo-500/20">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <button onClick={dismiss} className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors flex-shrink-0" aria-label="Dismiss">
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-bold text-slate-900 whitespace-nowrap">New Version</p>
+                <span className="text-[10px] font-semibold bg-indigo-50 text-indigo-600 px-1.5 py-0.2 rounded-full border border-indigo-100">
+                  {newVersion.length > 8 ? 'Update' : `v${newVersion}`}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 truncate">Reload to apply update</p>
+            </div>
           </div>
 
-          <ul className="space-y-1.5 mb-4">
-            {NOTICE.items.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 mt-1.5" />
-                <span className="text-xs text-slate-600">{item}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-70 transition-colors"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white disabled:opacity-70 transition-all shadow-xs"
             >
-              <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
-              {refreshing ? 'Refreshing...' : 'Refresh to update'}
+              <RefreshCw className={cn('w-3 h-3', refreshing && 'animate-spin')} />
+              <span>{refreshing ? 'Reloading...' : 'Reload'}</span>
             </button>
-            <button onClick={dismiss} className="py-2 px-3 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors">
-              Later
+            <button
+              onClick={dismiss}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Dismiss"
+              title="Later"
+            >
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

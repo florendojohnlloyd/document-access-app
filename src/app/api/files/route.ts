@@ -145,54 +145,119 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ error: 'File ID is required.' }, { status: 400 });
+    const body = await request.json().catch(() => null) as { ids?: string[] } | null;
 
-    const { data: file } = await supabase.from('files').select('*').eq('id', id).single();
-    if (!file) return NextResponse.json({ error: 'File not found.' }, { status: 404 });
+    let targetIds: string[] = [];
+    if (body?.ids && Array.isArray(body.ids)) {
+      targetIds = body.ids.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+    } else if (searchParams.get('ids')) {
+      targetIds = searchParams.get('ids')!.split(',').map((s) => s.trim()).filter(Boolean);
+    } else if (searchParams.get('id')) {
+      targetIds = [searchParams.get('id')!.trim()];
+    }
 
-    // Delete from storage
-    const { createServiceClient } = await import('@/lib/supabase/server');
-    const adminSupabase = createServiceClient();
+    if (targetIds.length === 0) {
+      return NextResponse.json({ error: 'At least one file ID is required.' }, { status: 400 });
+    }
 
-    const pathsToDelete = [file.storage_path, `${file.storage_path}.manifest.json`];
-    try {
-      const { data: manifestBlob } = await adminSupabase.storage
-        .from('documents')
-        .download(`${file.storage_path}.manifest.json`);
+    // Fetch the files to be deleted
+    const { data: filesToDelete, error: fetchError } = await supabase
+      .from('files')
+      .select('*')
+      .in('id', targetIds);
 
-      if (manifestBlob) {
-        const text = await manifestBlob.text();
-        const manifest = JSON.parse(text);
-        if (manifest?.totalParts) {
-          for (let i = 0; i < manifest.totalParts; i++) {
-            pathsToDelete.push(`${file.storage_path}.part_${i}`);
+    if (fetchError || !filesToDelete || filesToDelete.length === 0) {
+      return NextResponse.json({ error: 'No files found to delete.' }, { status: 404 });
+    }
+
+    // Branch check for non-super_admin: verify all target files belong to their branch
+    if (profile.role !== 'super_admin' && profile.branch) {
+      const { data: branchFolders } = await supabase
+        .from('folders')
+        .select('id, name, parent_folder_id')
+        .eq('name', profile.branch);
+
+      const branchFolderIds: string[] = [];
+      if (branchFolders) {
+        for (const branchFolder of branchFolders) {
+          branchFolderIds.push(branchFolder.id);
+          const { data: childFolders } = await supabase
+            .from('folders')
+            .select('id')
+            .eq('parent_folder_id', branchFolder.id);
+          if (childFolders) {
+            branchFolderIds.push(...childFolders.map((f) => f.id));
           }
         }
       }
-    } catch {}
 
-    const { error: storageError } = await adminSupabase.storage
-      .from('documents')
-      .remove(pathsToDelete);
-
-    if (storageError) {
-      console.error('Storage delete error:', storageError);
+      const unauthorized = filesToDelete.some((f) => !f.folder_id || !branchFolderIds.includes(f.folder_id));
+      if (unauthorized) {
+        return NextResponse.json({ error: 'You can only delete files in your branch.' }, { status: 403 });
+      }
     }
 
-    // Delete from database
-    const { error: dbError } = await supabase.from('files').delete().eq('id', id);
-    if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
+    // Prepare paths to delete from storage
+    const { createServiceClient } = await import('@/lib/supabase/server');
+    const adminSupabase = createServiceClient();
 
+    const allPathsToDelete: string[] = [];
+    for (const file of filesToDelete) {
+      allPathsToDelete.push(file.storage_path, `${file.storage_path}.manifest.json`);
+      try {
+        const { data: manifestBlob } = await adminSupabase.storage
+          .from('documents')
+          .download(`${file.storage_path}.manifest.json`);
+
+        if (manifestBlob) {
+          const text = await manifestBlob.text();
+          const manifest = JSON.parse(text);
+          if (manifest?.totalParts) {
+            for (let i = 0; i < manifest.totalParts; i++) {
+              allPathsToDelete.push(`${file.storage_path}.part_${i}`);
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // Remove from storage in batch
+    if (allPathsToDelete.length > 0) {
+      const { error: storageError } = await adminSupabase.storage
+        .from('documents')
+        .remove(allPathsToDelete);
+
+      if (storageError) {
+        console.error('Storage batch delete error:', storageError);
+      }
+    }
+
+    // Delete records from database
+    const actualDeletedIds = filesToDelete.map((f) => f.id);
+    const { error: dbError } = await supabase
+      .from('files')
+      .delete()
+      .in('id', actualDeletedIds);
+
+    if (dbError) {
+      return NextResponse.json({ error: dbError.message }, { status: 500 });
+    }
+
+    // Audit log
+    const fileNames = filesToDelete.map((f) => `"${f.name}"`).join(', ');
     await supabase.from('audit_logs').insert({
       actor_id: session.user.id,
       actor_name: profile.username,
       action: 'FILE_DELETE',
-      detail: `File "${file.name}" deleted.`,
+      detail: actualDeletedIds.length === 1
+        ? `File ${fileNames} deleted.`
+        : `${actualDeletedIds.length} files deleted: ${fileNames.length > 150 ? fileNames.substring(0, 150) + '...' : fileNames}`,
     });
 
-    return NextResponse.json({ success: true });
-  } catch {
+    return NextResponse.json({ success: true, count: actualDeletedIds.length, deletedIds: actualDeletedIds });
+  } catch (err) {
+    console.error('DELETE files error:', err);
     return NextResponse.json({ error: 'Server error.' }, { status: 500 });
   }
 }
+

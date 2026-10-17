@@ -329,6 +329,7 @@ export default function FilesPage() {
             setFiles((prev) => prev.map((f) => (f.id === updated.id ? { ...f, name: updated.name } : f)))
           }
           onFileDeleted={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))}
+          onFilesDeleted={(ids) => setFiles((prev) => prev.filter((f) => !ids.includes(f.id)))}
           isLoading={loadingFiles}
         />
       </div>

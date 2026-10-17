@@ -75,8 +75,8 @@ export default function FilesPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(true);
 
-  // Filters: WB, AB, BP, ALL and search
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'WB' | 'AB' | 'BP'>('ALL');
+  // Filters: WC, EB, BP, ALL and search
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'WC' | 'EB' | 'BP'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -156,9 +156,9 @@ export default function FilesPage() {
           )
       );
 
-  // Compute category counts for WB, AB, BP
-  const wbCount = useMemo(() => files.filter((f) => f.name.toUpperCase().includes('WB')).length, [files]);
-  const abCount = useMemo(() => files.filter((f) => f.name.toUpperCase().includes('AB')).length, [files]);
+  // Compute category counts for WC, EB, BP
+  const wcCount = useMemo(() => files.filter((f) => f.name.toUpperCase().includes('WC')).length, [files]);
+  const ebCount = useMemo(() => files.filter((f) => f.name.toUpperCase().includes('EB')).length, [files]);
   const bpCount = useMemo(() => files.filter((f) => f.name.toUpperCase().includes('BP')).length, [files]);
 
   // Filter files by type (WB, AB, BP, ALL) and search query
@@ -223,7 +223,7 @@ export default function FilesPage() {
                 />
               )}
 
-              {/* WB, AB, BP Filter Pills */}
+              {/* WC, EB, BP Filter Pills */}
               <div className="flex items-center bg-slate-100/90 p-1 rounded-xl gap-1 text-xs font-semibold text-slate-600 border border-slate-200/80">
                 <button
                   type="button"
@@ -243,33 +243,33 @@ export default function FilesPage() {
 
                 <button
                   type="button"
-                  onClick={() => setTypeFilter('WB')}
+                  onClick={() => setTypeFilter('WC')}
                   className={cn(
                     'px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5',
-                    typeFilter === 'WB'
+                    typeFilter === 'WC'
                       ? 'bg-white text-indigo-600 shadow-xs font-bold'
                       : 'hover:text-slate-900 text-slate-500 hover:bg-slate-200/50'
                   )}
                 >
-                  <span>WB</span>
-                  <span className={cn('text-[10px] px-1.5 py-0.2 rounded-full font-mono', typeFilter === 'WB' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'bg-slate-200/70 text-slate-500')}>
-                    {wbCount}
+                  <span>WC</span>
+                  <span className={cn('text-[10px] px-1.5 py-0.2 rounded-full font-mono', typeFilter === 'WC' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'bg-slate-200/70 text-slate-500')}>
+                    {wcCount}
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setTypeFilter('AB')}
+                  onClick={() => setTypeFilter('EB')}
                   className={cn(
                     'px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5',
-                    typeFilter === 'AB'
+                    typeFilter === 'EB'
                       ? 'bg-white text-indigo-600 shadow-xs font-bold'
                       : 'hover:text-slate-900 text-slate-500 hover:bg-slate-200/50'
                   )}
                 >
-                  <span>AB</span>
-                  <span className={cn('text-[10px] px-1.5 py-0.2 rounded-full font-mono', typeFilter === 'AB' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'bg-slate-200/70 text-slate-500')}>
-                    {abCount}
+                  <span>EB</span>
+                  <span className={cn('text-[10px] px-1.5 py-0.2 rounded-full font-mono', typeFilter === 'EB' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'bg-slate-200/70 text-slate-500')}>
+                    {ebCount}
                   </span>
                 </button>
 

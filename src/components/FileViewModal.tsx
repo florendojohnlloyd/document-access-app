@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, ExternalLink, Download, FileText, FileSpreadsheet, File, FileImage } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, FileSpreadsheet, File, FileImage, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Role } from '@/types';
 
 interface FileViewModalProps {
   fileId: string;
   fileName: string;
+  userRole?: Role;
   onClose: () => void;
 }
 
@@ -42,7 +44,9 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps) {
+export function FileViewModal({ fileId, fileName, userRole, onClose }: FileViewModalProps) {
+  const canDownload = userRole !== 'admin';
+
   const [url, setUrl] = useState<string | null>(null);
   const [multipartData, setMultipartData] = useState<MultipartData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,28 +175,37 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {!loading && (url || multipartData) && (
               <>
-                {url && (
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span className="hidden xs:inline sm:inline">Open</span>
-                  </a>
-                )}
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  disabled={downloading}
-                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline sm:inline">
-                    {downloading ? 'Downloading...' : 'Download'}
+                {canDownload ? (
+                  <>
+                    {url && (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span className="hidden xs:inline sm:inline">Open</span>
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="hidden xs:inline sm:inline">
+                        {downloading ? 'Downloading...' : 'Download'}
+                      </span>
+                    </button>
+                  </>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>View Only</span>
                   </span>
-                </button>
+                )}
               </>
             )}
             <button
@@ -206,7 +219,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
         </div>
 
         {/* Mobile top helper for PDFs & Office files */}
-        {url && (isPdf || isOffice) && (
+        {canDownload && url && (isPdf || isOffice) && (
           <div className="sm:hidden px-3 py-2 bg-indigo-50/90 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-700">
             <span className="truncate mr-2">Mobile preview may be limited</span>
             <a
@@ -253,28 +266,35 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                 </p>
               </div>
 
-              {downloading ? (
-                <div className="w-full max-w-xs space-y-2 pt-2">
-                  <div className="flex justify-between text-xs text-slate-500 font-medium">
-                    <span>Downloading part {downloadProgress.part} of {downloadProgress.total}...</span>
-                    <span className="font-semibold text-indigo-600">{downloadProgress.percent}%</span>
+              {canDownload ? (
+                downloading ? (
+                  <div className="w-full max-w-xs space-y-2 pt-2">
+                    <div className="flex justify-between text-xs text-slate-500 font-medium">
+                      <span>Downloading part {downloadProgress.part} of {downloadProgress.total}...</span>
+                      <span className="font-semibold text-indigo-600">{downloadProgress.percent}%</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full transition-all duration-200"
+                        style={{ width: `${Math.max(5, downloadProgress.percent)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full transition-all duration-200"
-                      style={{ width: `${Math.max(5, downloadProgress.percent)}%` }}
-                    />
-                  </div>
-                </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download File ({formatFileSize(multipartData.manifest.totalSize)})
+                  </button>
+                )
               ) : (
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  Download File ({formatFileSize(multipartData.manifest.totalSize)})
-                </button>
+                <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-800 max-w-xs text-center space-y-0.5">
+                  <p className="font-semibold text-amber-900">Download Restricted</p>
+                  <p>Admin accounts are not permitted to download files.</p>
+                </div>
               )}
             </div>
           )}
@@ -282,7 +302,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
           {/* PDF — direct iframe */}
           {!loading && url && isPdf && (
             <iframe
-              src={url}
+              src={canDownload ? url : `${url}#toolbar=0&navpanes=0`}
               className="w-full h-full border-0"
               title={fileName}
             />
@@ -295,7 +315,8 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
               <img
                 src={url}
                 alt={fileName}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+                onContextMenu={(e) => !canDownload && e.preventDefault()}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-sm select-none"
               />
             </div>
           )}
@@ -312,7 +333,7 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
           )}
 
           {/* Office fallback or unsupported */}
-          {!loading && url && (isOffice && iframeError || (!isPdf && !isImage && !isOffice)) && (
+          {!loading && url && ((isOffice && iframeError) || (!isPdf && !isImage && !isOffice)) && (
             <div className="flex flex-col items-center justify-center h-full gap-5 p-6">
               <FileTypeIcon ext={ext} />
               <div className="text-center">
@@ -321,25 +342,32 @@ export function FileViewModal({ fileId, fileName, onClose }: FileViewModalProps)
                   This file cannot be previewed in the browser.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Open in new tab
-                </a>
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-              </div>
+              {canDownload ? (
+                <div className="flex items-center gap-3">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Open in new tab
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-800 max-w-xs text-center space-y-0.5">
+                  <p className="font-semibold text-amber-900">Preview Unavailable · Download Restricted</p>
+                  <p>This file cannot be previewed in the browser. Admin accounts are restricted from downloading files.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

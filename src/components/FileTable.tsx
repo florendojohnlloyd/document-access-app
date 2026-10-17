@@ -7,12 +7,13 @@ import {
 import { cn, formatDate } from '@/lib/utils';
 import { Modal } from './Modal';
 import { FileViewModal } from './FileViewModal';
-import type { FileRecord } from '@/types';
+import type { FileRecord, Role } from '@/types';
 
 interface FileTableProps {
   files: FileRecord[];
   isManager: boolean;
   canDelete?: boolean;
+  userRole?: Role;
   onFileRenamed: (file: FileRecord) => void;
   onFileDeleted: (id: string) => void;
   isLoading?: boolean;
@@ -33,6 +34,7 @@ export function FileTable({
   files,
   isManager,
   canDelete,
+  userRole,
   onFileRenamed,
   onFileDeleted,
   isLoading,
@@ -270,6 +272,7 @@ export function FileTable({
         <FileViewModal
           fileId={viewFileId}
           fileName={viewFileName}
+          userRole={userRole}
           onClose={() => { setViewFileId(null); setViewFileName(''); }}
         />
       )}

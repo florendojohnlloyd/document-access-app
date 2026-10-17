@@ -325,6 +325,7 @@ export default function FilesPage() {
           isManager={isSuperAdmin}
           canDelete={canDelete}
           userRole={profile?.role}
+          filterKey={`${selectedFolderId ?? 'root'}-${typeFilter}-${searchQuery}`}
           onFileRenamed={(updated) =>
             setFiles((prev) => prev.map((f) => (f.id === updated.id ? { ...f, name: updated.name } : f)))
           }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Eye, Pencil, Trash2, FileText, FileImage, FileSpreadsheet, File,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { Modal } from './Modal';
@@ -14,10 +15,24 @@ interface FileTableProps {
   isManager: boolean;
   canDelete?: boolean;
   userRole?: Role;
+  filterKey?: string;
   onFileRenamed: (file: FileRecord) => void;
   onFileDeleted: (id: string) => void;
   onFilesDeleted?: (ids: string[]) => void;
   isLoading?: boolean;
+}
+
+function getPageNumbers(current: number, total: number): (number | string)[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, '...', total];
+  }
+  if (current >= total - 3) {
+    return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, '...', current - 1, current, current + 1, '...', total];
 }
 
 function getFileIcon(name: string) {
@@ -36,6 +51,7 @@ export function FileTable({
   isManager,
   canDelete,
   userRole,
+  filterKey,
   onFileRenamed,
   onFileDeleted,
   onFilesDeleted,
@@ -55,12 +71,36 @@ export function FileTable({
   const [batchDeleteModal, setBatchDeleteModal] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === files.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(files.map((f) => f.id)));
-    }
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  // Reset pagination & selection when search/filter/folder changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  }, [filterKey]);
+
+  // Compute pagination
+  const totalPages = Math.max(1, Math.ceil(files.length / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedFiles = useMemo(() => files.slice(startIndex, endIndex), [files, startIndex, endIndex]);
+
+  const isPageAllSelected = paginatedFiles.length > 0 && paginatedFiles.every((f) => selectedIds.has(f.id));
+  const isPageSomeSelected = paginatedFiles.some((f) => selectedIds.has(f.id)) && !isPageAllSelected;
+
+  const toggleSelectPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (isPageAllSelected) {
+        paginatedFiles.forEach((f) => next.delete(f.id));
+      } else {
+        paginatedFiles.forEach((f) => next.add(f.id));
+      }
+      return next;
+    });
   };
 
   const toggleSelectOne = (id: string) => {
@@ -178,20 +218,29 @@ export function FileTable({
     <>
       {/* Batch Action Toolbar when files are selected */}
       {showDelete && selectedIds.size > 0 && (
-        <div className="flex items-center justify-between bg-red-50/90 border border-red-200/90 rounded-xl px-4 py-2.5 mb-3 shadow-xs">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-red-50/90 border border-red-200/90 rounded-xl px-4 py-2.5 mb-3 shadow-xs gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-xs sm:text-sm font-semibold text-red-950">
               {selectedIds.size} file{selectedIds.size !== 1 ? 's' : ''} selected
             </span>
+            {selectedIds.size < files.length && (
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set(files.map((f) => f.id)))}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline ml-1"
+              >
+                Select all {files.length} files
+              </button>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-white hover:text-slate-900 transition-colors"
             >
-              Cancel
+              Clear selection
             </button>
             <button
               type="button"
@@ -214,15 +263,16 @@ export function FileTable({
                 <th className="w-10 py-3 px-3 text-center">
                   <input
                     type="checkbox"
-                    checked={files.length > 0 && selectedIds.size === files.length}
+                    checked={paginatedFiles.length > 0 && isPageAllSelected}
                     ref={(el) => {
                       if (el) {
-                        el.indeterminate = selectedIds.size > 0 && selectedIds.size < files.length;
+                        el.indeterminate = isPageSomeSelected;
                       }
                     }}
-                    onChange={toggleSelectAll}
+                    onChange={toggleSelectPage}
                     className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
-                    aria-label="Select all files"
+                    aria-label="Select all files on this page"
+                    title={isPageAllSelected ? "Deselect this page" : "Select all on this page"}
                   />
                 </th>
               )}
@@ -244,7 +294,7 @@ export function FileTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {files.map((file) => {
+            {paginatedFiles.map((file) => {
               const isSelected = selectedIds.has(file.id);
               return (
                 <tr
@@ -370,6 +420,106 @@ export function FileTable({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 text-xs text-slate-500">
+        <div className="flex items-center gap-3">
+          <span>
+            Showing <strong className="text-slate-700 font-semibold">{files.length === 0 ? 0 : startIndex + 1}</strong> to{' '}
+            <strong className="text-slate-700 font-semibold">{Math.min(endIndex, files.length)}</strong> of{' '}
+            <strong className="text-slate-700 font-semibold">{files.length}</strong> file{files.length !== 1 ? 's' : ''}
+          </span>
+
+          <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
+            <label htmlFor="pageSizeSelect" className="text-slate-400 font-medium">Rows:</label>
+            <select
+              id="pageSizeSelect"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setCurrentPage(1)}
+              disabled={safeCurrentPage === 1}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="First page"
+              aria-label="First page"
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safeCurrentPage === 1}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium text-xs"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Prev</span>
+            </button>
+
+            <div className="flex items-center gap-1 mx-1">
+              {getPageNumbers(safeCurrentPage, totalPages).map((p, idx) => {
+                if (typeof p === 'string') {
+                  return <span key={`ellipsis-${idx}`} className="px-1 text-slate-400 font-bold">…</span>;
+                }
+                const isActive = p === safeCurrentPage;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    className={cn(
+                      'min-w-[28px] h-7 px-2 rounded-lg text-xs font-semibold transition-all',
+                      isActive
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
+                    )}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage === totalPages}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium text-xs"
+              aria-label="Next page"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={safeCurrentPage === totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Last page"
+              aria-label="Last page"
+            >
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {modalMode === 'rename' && targetFile && (

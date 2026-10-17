@@ -26,8 +26,13 @@ export async function PATCH(
         return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
       }
       updates.role = body.role;
+      if (body.role === 'admin' || body.role === 'super_admin') {
+        updates.branch = null;
+      }
     }
-    if (body.branch !== undefined) updates.branch = body.branch;
+    if (body.branch !== undefined && updates.branch === undefined) {
+      updates.branch = body.branch;
+    }
     if (body.full_name !== undefined) updates.full_name = body.full_name;
 
     if (Object.keys(updates).length === 0) {

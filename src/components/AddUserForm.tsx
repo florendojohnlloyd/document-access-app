@@ -19,17 +19,20 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const requiresBranch = role === 'user';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess('');
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!branch) { setError('Please select a branch.'); return; }
+    if (requiresBranch && !branch) { setError('Please select a branch.'); return; }
     setLoading(true);
     try {
+      const finalBranch = requiresBranch ? branch : null;
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim().toLowerCase(), password, role, branch }),
+        body: JSON.stringify({ username: username.trim().toLowerCase(), password, role, branch: finalBranch }),
       });
       const data = await res.json() as Profile | { error: string };
       if (!res.ok || 'error' in data) {
@@ -80,12 +83,18 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
 
         <div>
           <label htmlFor="new-branch" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Branch</label>
-          <select id="new-branch" value={branch} onChange={(e) => setBranch(e.target.value as Branch)} className={inputClass} required>
-            <option value="" disabled>— Select branch —</option>
-            {BRANCHES.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
+          {requiresBranch ? (
+            <select id="new-branch" value={branch} onChange={(e) => setBranch(e.target.value as Branch)} className={inputClass} required>
+              <option value="" disabled>— Select branch —</option>
+              {BRANCHES.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-400 text-sm flex items-center h-[42px]">
+              <span className="italic">All Branches (None)</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -102,7 +111,7 @@ export function AddUserForm({ onCreated }: AddUserFormProps) {
         </div>
       )}
 
-      <button type="submit" disabled={loading || !username || !password || !branch}
+      <button type="submit" disabled={loading || !username || !password || (requiresBranch && !branch)}
         className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
         {loading ? (
           <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">

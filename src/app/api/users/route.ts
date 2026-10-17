@@ -58,8 +58,10 @@ export async function POST(request: NextRequest) {
     if (!role || !['super_admin', 'admin', 'user'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
     }
-    if (!branch) {
-      return NextResponse.json({ error: 'Branch is required.' }, { status: 400 });
+
+    const userBranch = (role === 'admin' || role === 'super_admin') ? null : (branch || null);
+    if (role === 'user' && !userBranch) {
+      return NextResponse.json({ error: 'Branch is required for User accounts.' }, { status: 400 });
     }
 
     if (password.length < 6) {
@@ -90,7 +92,7 @@ export async function POST(request: NextRequest) {
         id: authData.user.id,
         username,
         role,
-        branch,
+        branch: userBranch,
         full_name: null,
         name_locked: false,
       })

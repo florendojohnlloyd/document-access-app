@@ -41,6 +41,8 @@ function EditUserModal({ user, onSaved, onClose }: { user: Profile; onSaved: (u:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const requiresBranch = role === 'user';
+
   const inputClass = cn(
     'w-full px-3 py-2.5 rounded-lg border text-sm',
     'bg-white text-slate-900 border-slate-200',
@@ -50,13 +52,14 @@ function EditUserModal({ user, onSaved, onClose }: { user: Profile; onSaved: (u:
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!branch) { setError('Please select a branch.'); return; }
+    const finalBranch = requiresBranch ? branch : null;
+    if (requiresBranch && !finalBranch) { setError('Please select a branch.'); return; }
     setLoading(true);
     try {
       const res = await fetch(`/api/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, branch }),
+        body: JSON.stringify({ role, branch: finalBranch }),
       });
       const data = await res.json() as Profile | { error: string };
       if (!res.ok || 'error' in data) {
@@ -111,12 +114,18 @@ function EditUserModal({ user, onSaved, onClose }: { user: Profile; onSaved: (u:
           {/* Branch */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Branch</label>
-            <select value={branch} onChange={(e) => setBranch(e.target.value as Branch)} className={inputClass} required>
-              <option value="" disabled>— Select branch —</option>
-              {BRANCHES.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
+            {requiresBranch ? (
+              <select value={branch} onChange={(e) => setBranch(e.target.value as Branch)} className={inputClass} required>
+                <option value="" disabled>— Select branch —</option>
+                {BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-400 text-sm flex items-center h-[42px]">
+                <span className="italic">All Branches (None)</span>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -130,7 +139,7 @@ function EditUserModal({ user, onSaved, onClose }: { user: Profile; onSaved: (u:
             <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
               Cancel
             </button>
-            <button type="submit" disabled={loading || !branch}
+            <button type="submit" disabled={loading || (requiresBranch && !branch)}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold disabled:opacity-50 transition-colors">
               {loading
                 ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
@@ -227,7 +236,7 @@ export function UserTable({ users, currentUserId, currentUserRole, currentUserna
                 <td className="py-3 px-4 hidden sm:table-cell">
                   {user.branch
                     ? <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md">{user.branch}</span>
-                    : <span className="text-slate-300 italic text-xs">—</span>}
+                    : <span className="text-slate-400 italic text-xs">All Branches</span>}
                 </td>
                 <td className="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">{formatDate(user.created_at)}</td>
                 {(canEdit || canDelete) && (

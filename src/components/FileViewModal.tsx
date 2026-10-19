@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X, ExternalLink, Download, FileText, FileSpreadsheet, File, FileImage, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Role } from '@/types';
+import type { Role, Profile } from '@/types';
 
 interface FileViewModalProps {
   fileId: string;
@@ -45,7 +45,25 @@ function formatFileSize(bytes: number) {
 }
 
 export function FileViewModal({ fileId, fileName, userRole, onClose }: FileViewModalProps) {
-  const canDownload = userRole !== 'admin';
+  const [currentUserRole, setCurrentUserRole] = useState<Role | undefined>(userRole);
+
+  useEffect(() => {
+    if (userRole) {
+      setCurrentUserRole(userRole);
+      return;
+    }
+    // Fallback: fetch current profile if userRole was not passed
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((data: Profile) => {
+        if (data?.role) setCurrentUserRole(data.role);
+      })
+      .catch(() => {});
+  }, [userRole]);
+
+  // Both super_admin and admin roles can download; only 'user' role is View Only
+  const effectiveRole = currentUserRole ?? userRole;
+  const canDownload = effectiveRole ? effectiveRole !== 'user' : true;
 
   const [url, setUrl] = useState<string | null>(null);
   const [multipartData, setMultipartData] = useState<MultipartData | null>(null);
@@ -140,14 +158,32 @@ export function FileViewModal({ fileId, fileName, userRole, onClose }: FileViewM
         setDownloading(false);
       }
     } else if (url) {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      setDownloading(true);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Download request failed');
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.warn('Direct blob download failed, falling back to window open:', err);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } finally {
+        setDownloading(false);
+      }
     }
   };
 
@@ -293,7 +329,7 @@ export function FileViewModal({ fileId, fileName, userRole, onClose }: FileViewM
               ) : (
                 <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-800 max-w-xs text-center space-y-0.5">
                   <p className="font-semibold text-amber-900">Download Restricted</p>
-                  <p>Admin accounts are not permitted to download files.</p>
+                  <p>View-only accounts are not permitted to download files.</p>
                 </div>
               )}
             </div>
@@ -365,7 +401,7 @@ export function FileViewModal({ fileId, fileName, userRole, onClose }: FileViewM
               ) : (
                 <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-800 max-w-xs text-center space-y-0.5">
                   <p className="font-semibold text-amber-900">Preview Unavailable · Download Restricted</p>
-                  <p>This file cannot be previewed in the browser. Admin accounts are restricted from downloading files.</p>
+                  <p>This file cannot be previewed in the browser. View-only accounts are restricted from downloading files.</p>
                 </div>
               )}
             </div>

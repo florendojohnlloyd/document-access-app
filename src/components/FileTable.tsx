@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Eye, Pencil, Trash2, FileText, FileImage, FileSpreadsheet, File,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { Modal } from './Modal';
@@ -45,6 +46,7 @@ function getFileIcon(name: string) {
 }
 
 type ModalMode = 'rename' | 'delete' | null;
+type SortDir = 'asc' | 'desc' | null;
 
 export function FileTable({
   files,
@@ -75,18 +77,35 @@ export function FileTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
 
+  // Name sort: null keeps the API order (newest first)
+  const [nameSort, setNameSort] = useState<SortDir>(null);
+
   // Reset pagination & selection when search/filter/folder changes
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds(new Set());
   }, [filterKey]);
 
+  const cycleNameSort = () => {
+    setNameSort((prev) => (prev === null ? 'asc' : prev === 'asc' ? 'desc' : null));
+    setCurrentPage(1);
+  };
+
+  // Sort the full list before paginating; numeric collation keeps "file2" before "file10"
+  const sortedFiles = useMemo(() => {
+    if (!nameSort) return files;
+    const dir = nameSort === 'asc' ? 1 : -1;
+    return [...files].sort(
+      (a, b) => dir * a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [files, nameSort]);
+
   // Compute pagination
-  const totalPages = Math.max(1, Math.ceil(files.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(sortedFiles.length / pageSize));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedFiles = useMemo(() => files.slice(startIndex, endIndex), [files, startIndex, endIndex]);
+  const paginatedFiles = useMemo(() => sortedFiles.slice(startIndex, endIndex), [sortedFiles, startIndex, endIndex]);
 
   const isPageAllSelected = paginatedFiles.length > 0 && paginatedFiles.every((f) => selectedIds.has(f.id));
   const isPageSomeSelected = paginatedFiles.some((f) => selectedIds.has(f.id)) && !isPageAllSelected;
@@ -276,8 +295,31 @@ export function FileTable({
                   />
                 </th>
               )}
-              <th className="text-left py-3 px-4 font-medium text-slate-500">
-                Name
+              <th
+                className="text-left py-3 px-4 font-medium text-slate-500"
+                aria-sort={nameSort === 'asc' ? 'ascending' : nameSort === 'desc' ? 'descending' : 'none'}
+              >
+                <button
+                  type="button"
+                  onClick={cycleNameSort}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded transition-colors hover:text-slate-800',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                    nameSort && 'text-indigo-600 hover:text-indigo-700'
+                  )}
+                  title={
+                    nameSort === null ? 'Sort A to Z' : nameSort === 'asc' ? 'Sort Z to A' : 'Clear sort (newest first)'
+                  }
+                >
+                  Name
+                  {nameSort === 'asc' ? (
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  ) : nameSort === 'desc' ? (
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                  )}
+                </button>
               </th>
               <th className="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">
                 Folder

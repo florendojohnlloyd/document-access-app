@@ -467,6 +467,8 @@ $('profileBtn').addEventListener('click', async () => {
 async function load() {
   const d = await call('listData', S.token);
   S.profile = d.profile; S.files = d.files; S.folders = d.folders;
+  // Branch users: open the month levels so their branch folders show straight away.
+  if (!isSuper() && S.profile.branch) { const up = new Set(uploadableFolders().map((f) => f.id)); S.folders.forEach((f) => { if (!up.has(f.id)) S.expanded.add(f.id); }); }
   $('newFolderBtn').classList.toggle('hidden', !isManager());
   show('app'); renderShell(); renderFolderSelect(); renderUploadZone(); renderFiles();
   const p = d.profile;
@@ -520,7 +522,7 @@ function renderFolderSelect() {
   const list = q
     ? (S.folders.filter((f) => f.name.toLowerCase().includes(q)).map((f) => '<li><button data-fsel="' + f.id + '" class="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left ' +
         (S.folder === f.id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700 hover:bg-slate-50') + '"><i data-lucide="folder" class="w-4 h-4 flex-shrink-0 text-slate-400"></i><span class="flex-1 truncate">' + esc(f.name) +
-        '</span>' + (f.parent_folder_id ? '<span class="text-xs text-slate-400 flex-shrink-0">sub</span>' : '') + (S.folder === f.id ? check : '') + '</button></li>').join('') ||
+        '</span>' + (f.parent_folder_id ? '<span class="text-xs text-slate-400 flex-shrink-0 truncate max-w-[45%]">' + esc(folderPath(f.parent_folder_id)) + '</span>' : '') + (S.folder === f.id ? check : '') + '</button></li>').join('') ||
        '<li class="px-3 py-3 text-xs text-slate-400 text-center">No folders found</li>')
     : (kids[''] || []).map((f) => item(f, 0)).join('');
   $('folderSelect').innerHTML =
@@ -679,19 +681,33 @@ function uploadableFolders() {
   const b = S.profile.branch.toUpperCase();
   return S.folders.filter((f) => f.name.toUpperCase() === b || S.folders.some((p) => p.name.toUpperCase() === b && f.parent_folder_id === p.id));
 }
+// "OCTOBER 2026 / RIZAL": many branch folders share a name, so lists show where each one sits (the top "Month" level is left out).
+function folderPath(id) {
+  const parts = [];
+  for (let f = S.folders.find((x) => x.id === id); f; f = S.folders.find((x) => x.id === f.parent_folder_id)) parts.unshift(f.name);
+  if (parts.length > 1) parts.shift();
+  return parts.join(' / ');
+}
+// The selected folder is used for uploads only when the user may upload there (a month folder is not, for branch users).
+function uploadTarget() {
+  if (S.folder && uploadableFolders().some((f) => f.id === S.folder)) return S.folder;
+  return S.uploadFolder;
+}
 function renderUploadZone() {
   const q = S.queue, total = q.length;
   const done = q.filter((x) => x.status === 'done').length, up = q.filter((x) => x.status === 'uploading').length, failed = q.filter((x) => x.status === 'error').length;
   const totalBytes = q.reduce((a, x) => a + x.size, 0), sent = q.reduce((a, x) => a + (x.status === 'done' ? x.size : x.sent), 0);
   const pct = totalBytes ? Math.min(100, Math.round((sent / totalBytes) * 100)) : 0;
-  const target = S.folder || S.uploadFolder;
+  const target = uploadTarget();
+  const needPick = !(S.folder && uploadableFolders().some((f) => f.id === S.folder));
   let h = '<div class="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-wrap">' +
     '<button data-up="pick" class="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 px-3.5 py-2.5 rounded-xl border text-sm transition-all text-slate-700 border-slate-200 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 bg-white shadow-xs ' + (S.uploading ? 'opacity-60 cursor-not-allowed' : '') + '"' + (S.uploading ? ' disabled' : '') + '>' +
     '<i data-lucide="paperclip" class="w-4 h-4 text-indigo-500 flex-shrink-0"></i><span class="font-semibold">' + (total ? 'Add more files (' + total + ' selected)' : 'Choose files') + '</span>' +
     '<span class="text-xs text-slate-400 hidden sm:inline">(Multiple files supported · Unlimited size)</span></button>';
-  if (total && !S.folder) {
+  if (total && needPick) {
+    const opts = uploadableFolders().map((f) => ({ id: f.id, label: folderPath(f.id) })).sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
     h += '<select data-up="folder" class="w-full sm:w-auto px-3.5 py-2.5 rounded-xl border text-sm transition-colors bg-white text-slate-800 border-slate-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 ' + (S.uploadFolder ? '' : 'border-amber-300 text-slate-500') + '"' + (S.uploading ? ' disabled' : '') + '>' +
-      '<option value="" disabled' + (S.uploadFolder ? '' : ' selected') + '>— Select Month / Folder —</option>' + uploadableFolders().map((f) => '<option value="' + f.id + '"' + (f.id === S.uploadFolder ? ' selected' : '') + '>' + esc(f.name) + '</option>').join('') + '</select>';
+      '<option value="" disabled' + (S.uploadFolder ? '' : ' selected') + '>— Select Month / Folder —</option>' + opts.map((o) => '<option value="' + o.id + '"' + (o.id === S.uploadFolder ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
   }
   if (total) {
     h += '<div class="flex items-center gap-2 w-full sm:w-auto">' + (!S.uploading
@@ -754,7 +770,7 @@ function readSliceB64(blob) {
 }
 
 async function startUploads() {
-  const folderId = S.folder || S.uploadFolder; if (!folderId) return;
+  const folderId = uploadTarget(); if (!folderId) return;
   S.uploading = true; S.upMsg = null;
   const pending = S.queue.filter((x) => x.status === 'pending' || x.status === 'error');
   pending.forEach((x) => { x.status = 'pending'; x.progress = 0; x.sent = 0; x.error = ''; });

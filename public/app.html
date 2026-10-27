@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DocuVault</title>
+  <script src="https://cdn.tailwindcss.com/3.4.5"></script>
+  <script src="https://unpkg.com/lucide@0.400.0/dist/umd/lucide.min.js"></script>
+  <!-- PDF.js renders PDFs onto canvases: Chrome's own viewer is blocked inside Apps Script's sandboxed frame.
+       The worker script is loaded on the page too, so PDF.js can fall back to it when a cross-origin worker is refused. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }, boxShadow: { xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)' } } } };</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html { background-color: #f8fafc; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .lbl { display:block; font-size:.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
+    .sb-text { transition: max-width .2s ease, opacity .2s ease, margin .2s ease; white-space: nowrap; overflow: hidden; }
+    .folder-row:hover .folder-actions { opacity: 1; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen font-sans">
+
+<!-- ================= LOGIN ================= -->
+<main id="loginView" class="hidden min-h-screen flex flex-col md:flex-row bg-slate-50">
+  <div class="relative hidden md:flex md:w-1/2 flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900">
+    <div class="absolute inset-0 opacity-10" style="background-image:linear-gradient(rgba(255,255,255,0.15) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.15) 1px,transparent 1px);background-size:40px 40px"></div>
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative z-10 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-5 h-5 text-white"></i></div>
+      <div><p class="text-white font-bold text-lg">DocuVault</p><p class="text-blue-200/70 text-xs">Document Management System</p></div>
+    </div>
+    <div class="relative z-10 space-y-6">
+      <div>
+        <p class="text-blue-300 text-xs font-semibold uppercase tracking-widest mb-3">Enterprise Solution</p>
+        <h1 class="text-4xl font-bold text-white leading-tight">Manage Your<br><span class="text-blue-300">Documents</span><br>Efficiently</h1>
+        <p class="text-blue-100/70 mt-4 text-sm leading-relaxed max-w-xs">Centralize your documents with role-based access, audit trails, and secure storage.</p>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white/10 border border-white/15 rounded-xl p-3 text-center"><i data-lucide="file-check" class="w-4 h-4 text-blue-200 mx-auto mb-1"></i><p class="text-white text-xs font-bold">Secured</p><p class="text-blue-300/70 text-xs">Documents</p></div>
+        <div class="bg-white/10 border border-white/15 rounded-xl p-3 text-center"><i data-lucide="trending-up" class="w-4 h-4 text-blue-200 mx-auto mb-1"></i><p class="text-white text-xs font-bold">Tracked</p><p class="text-blue-300/70 text-xs">Access</p></div>
+        <div class="bg-white/10 border border-white/15 rounded-xl p-3 text-center"><i data-lucide="shield" class="w-4 h-4 text-blue-200 mx-auto mb-1"></i><p class="text-white text-xs font-bold">Managed</p><p class="text-blue-300/70 text-xs">Roles</p></div>
+      </div>
+    </div>
+    <p class="relative z-10 text-blue-300/40 text-xs">&copy; <span id="year"></span> DocuVault. All rights reserved.</p>
+  </div>
+  <div class="flex-1 flex items-center justify-center bg-white p-8">
+    <div class="w-full max-w-sm">
+      <div class="flex items-center gap-3 mb-10 md:hidden">
+        <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-4 h-4 text-white"></i></div>
+        <span class="text-slate-900 font-bold text-lg">DocuVault</span>
+      </div>
+      <div class="mb-8">
+        <div class="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 mb-4">
+          <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div><span class="text-blue-600 text-xs font-medium">Secure Portal</span>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900">Sign In</h2>
+        <p class="text-slate-500 text-sm mt-1">Enter your credentials to access the system</p>
+      </div>
+      <form id="loginForm" class="space-y-4">
+        <div class="space-y-1.5"><label for="loginUser" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Username</label>
+          <input id="loginUser" type="text" autocomplete="username" required placeholder="Enter username" class="w-full px-4 py-3 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50"></div>
+        <div class="space-y-1.5"><label for="loginPass" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</label>
+          <div class="relative">
+            <input id="loginPass" type="password" autocomplete="current-password" required placeholder="Enter password" class="w-full px-4 py-3 pr-12 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50">
+            <button type="button" id="togglePass" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-500 transition-colors"><i data-lucide="eye" class="w-4 h-4"></i></button>
+          </div></div>
+        <div id="loginError" class="hidden flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3"><div class="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></div><p class="text-red-600 text-sm"></p></div>
+        <div class="h-px bg-slate-100 my-1"></div>
+        <button type="submit" id="loginBtn" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm shadow-md shadow-blue-600/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed group">Sign In <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i></button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<!-- ================= APP SHELL ================= -->
+<div id="appView" class="hidden flex h-screen overflow-hidden bg-slate-100">
+  <div id="overlay" class="hidden fixed inset-0 bg-black/40 z-30 md:hidden"></div>
+  <aside id="sidebar" class="flex-shrink-0 flex flex-col bg-white border-r border-slate-200 h-full transition-[width,transform] duration-200 ease-in-out overflow-hidden shadow-lg md:shadow-none fixed top-0 left-0 z-40 md:relative md:z-auto w-64">
+    <div class="flex items-center justify-between h-14 px-3.5 border-b border-slate-200 flex-shrink-0 overflow-hidden">
+      <div class="flex items-center min-w-0">
+        <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-xs shadow-blue-500/20"><i data-lucide="bar-chart-3" class="w-4 h-4 text-white"></i></div>
+        <div class="sb-text min-w-0 max-w-44 opacity-100 ml-3"><p class="text-slate-900 font-bold text-sm tracking-tight">DocuVault</p><p class="text-slate-400 text-xs">Document System</p></div>
+      </div>
+      <button id="sidebarClose" class="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors ml-auto flex-shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+      <div class="sb-text max-h-6 opacity-100 mb-2"><p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3">Navigation</p></div>
+      <div id="navItems" class="space-y-1"></div>
+    </nav>
+    <div class="p-2 border-t border-slate-200 flex-shrink-0 overflow-hidden">
+      <div class="flex items-center h-12 px-2 rounded-xl bg-slate-50 border border-slate-100">
+        <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0"><span id="sbInitial" class="text-white text-xs font-bold uppercase"></span></div>
+        <div class="sb-text min-w-0 max-w-44 opacity-100 ml-3"><p id="sbName" class="text-slate-900 text-sm font-medium truncate"></p><span id="sbRole"></span></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+    <header class="bg-white border-b border-slate-200 px-4 h-14 flex items-center justify-between gap-4 sticky top-0 z-10 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <button id="hamburger" class="flex flex-col justify-center gap-1.5 w-9 h-9 rounded-lg hover:bg-slate-100 transition-colors p-2 flex-shrink-0">
+          <span class="block w-5 h-0.5 bg-slate-600 rounded-full"></span><span id="hamMid" class="block h-0.5 bg-slate-600 rounded-full transition-all w-3"></span><span class="block w-5 h-0.5 bg-slate-600 rounded-full"></span>
+        </button>
+        <h1 id="pageTitle" class="text-sm font-semibold text-slate-800 tracking-tight">Files</h1>
+      </div>
+      <div class="flex items-center gap-1">
+        <button id="profileBtn" class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors group">
+          <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0"><span id="hdInitials" class="text-white text-xs font-bold"></span></div>
+          <div class="hidden sm:block text-left"><p id="hdName" class="text-sm font-semibold text-slate-800 leading-tight"></p><p id="hdRole" class="text-xs font-medium"></p></div>
+          <i data-lucide="settings" class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 hidden sm:block transition-colors"></i>
+        </button>
+        <div class="w-px h-5 bg-slate-200 mx-1"></div>
+        <button id="logoutBtn" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 whitespace-nowrap"><i data-lucide="log-out" class="w-4 h-4 flex-shrink-0"></i><span class="hidden sm:inline">Sign Out</span></button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-6">
+      <!-- ===== FILES ===== -->
+      <div id="filesView" class="space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-xs">
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <h2 class="text-xs font-bold text-slate-600 uppercase tracking-wider">Upload Files</h2>
+              <span class="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">No size limit · Multi-file</span>
+            </div>
+            <div id="uploadZone" class="w-full space-y-3"></div>
+            <input id="fileInput" type="file" multiple class="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.zip,.csv,.txt">
+          </div>
+          <div class="border-t border-slate-100"></div>
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+              <div id="folderSelect" class="relative w-full sm:w-56"></div>
+              <button id="newFolderBtn" class="hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50/60 text-indigo-700 text-sm font-medium hover:bg-indigo-100 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i>New Folder</button>
+              <div id="pills" class="flex items-center bg-slate-100/90 p-1 rounded-xl gap-1 text-xs font-semibold text-slate-600 border border-slate-200/80"></div>
+            </div>
+            <div class="flex items-center justify-between sm:justify-end gap-2 text-xs text-slate-400 flex-shrink-0">
+              <div class="relative">
+                <input id="search" type="text" placeholder="Search filename..." class="pl-8 pr-7 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white w-40 sm:w-52 transition-all">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                <button id="searchClear" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold">✕</button>
+              </div>
+              <span id="countLabel" class="font-medium text-slate-500 whitespace-nowrap pl-1"></span>
+            </div>
+          </div>
+          <div id="fileTable"></div>
+        </div>
+      </div>
+
+      <!-- ===== USERS ===== -->
+      <div id="usersView" class="hidden space-y-5">
+        <div id="addUserCard" class="hidden bg-white rounded-xl border border-slate-200 p-5">
+          <h2 class="text-sm font-semibold text-slate-800 mb-4">Add New User</h2>
+          <form id="addUserForm" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Username</label>
+                <input name="username" type="text" required placeholder="e.g. john.doe" class="w-full px-3 py-2.5 rounded-lg border text-sm bg-white text-slate-900 border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                <p class="text-xs text-slate-400 mt-1">Lowercase, no spaces</p></div>
+              <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+                <input name="password" type="password" required minlength="6" placeholder="Min. 6 characters" class="w-full px-3 py-2.5 rounded-lg border text-sm bg-white text-slate-900 border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"></div>
+              <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label>
+                <select name="role" class="w-full px-3 py-2.5 rounded-lg border text-sm bg-white text-slate-900 border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                  <option value="user">User (View &amp; Upload)</option><option value="admin">Admin (Upload &amp; Delete)</option><option value="super_admin">Super Admin (Full Access)</option></select></div>
+              <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Branch</label><div id="addBranchWrap"></div></div>
+            </div>
+            <div id="addUserMsg"></div>
+            <button type="submit" id="addUserBtn" class="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"><i data-lucide="user-plus" class="w-4 h-4"></i>Add User</button>
+          </form>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div><h2 class="text-sm font-semibold text-slate-800">All Users</h2><p id="usersViewOnly" class="hidden text-xs text-slate-400 mt-0.5">View only — contact a Super Admin to make changes.</p></div>
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+              <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 flex-1 sm:w-56">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>
+                <input id="userSearch" type="text" placeholder="Search users..." class="w-full bg-transparent text-sm text-slate-700 placeholder-slate-400 focus:outline-none">
+              </div>
+              <span id="userCount" class="text-xs text-slate-400 flex-shrink-0 whitespace-nowrap"></span>
+            </div>
+          </div>
+          <div id="userTable"></div>
+        </div>
+      </div>
+
+      <!-- ===== LOGS ===== -->
+      <div id="logsView" class="hidden space-y-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div><h2 class="text-sm font-semibold text-slate-800">Audit Logs</h2><p id="logRefreshed" class="text-xs text-slate-400 mt-0.5"></p></div>
+            <div class="flex items-center gap-3"><span id="logCount" class="text-xs text-slate-400"></span>
+              <button id="logRefresh" class="p-2 rounded-lg transition-colors text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button></div>
+          </div>
+          <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 mb-4">
+            <div class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 w-full sm:w-64">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>
+              <input id="logSearch" type="text" placeholder="Search actor, action, detail..." class="w-full bg-transparent text-sm text-slate-700 placeholder-slate-400 focus:outline-none">
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <div class="flex flex-col gap-1 flex-1 sm:flex-initial"><label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">From</label>
+                <input id="logFrom" type="date" class="px-3 py-2 rounded-lg border text-sm bg-white text-slate-900 border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
+              <div class="flex flex-col gap-1 flex-1 sm:flex-initial"><label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">To</label>
+                <input id="logTo" type="date" class="px-3 py-2 rounded-lg border text-sm bg-white text-slate-900 border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
+            </div>
+            <button id="logClear" class="hidden flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 border border-slate-200 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i>Clear filters</button>
+          </div>
+          <div id="logTable"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"></div>
+<div id="preview" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm"></div>
+<div id="toast" class="hidden fixed bottom-4 right-4 z-[60] rounded-lg px-4 py-3 shadow-lg text-sm"></div>
+
+<script>
+// ---------- State & helpers ----------
+const ROLE_LABEL = { super_admin: 'Super Admin', admin: 'Admin', user: 'User' };
+const MIME = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', csv: 'text/csv', txt: 'text/plain',
+  zip: 'application/zip', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+const ALLOWED = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'csv', 'txt'];
+const S = {
+  token: null, profile: null, files: [], folders: [], branches: [], view: 'files', sidebarOpen: window.innerWidth >= 768,
+  folder: null, folderOpen: false, folderSearch: '', expanded: new Set(), pill: 'ALL', q: '', sort: null, page: 1, size: 15, selected: new Set(),
+  queue: [], uploading: false, showQueue: true, uploadFolder: '', preview: null,
+  users: [], userQ: '', userPage: 1, userSize: 15, logs: [], logQ: '', logFrom: '', logTo: '', logPage: 1, logSize: 15,
+};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ext = (n) => (String(n).split('.').pop() || '').toLowerCase();
+const fmtDate = (s) => s ? new Date(s).toLocaleString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+const fmtSize = (b) => { if (!b) return '0 B'; const u = ['B', 'KB', 'MB', 'GB']; let i = 0, n = b; while (n >= 1024 && i < 3) { n /= 1024; i++; } return n.toFixed(i ? 1 : 0) + ' ' + u[i]; };
+const role = () => (S.profile ? S.profile.role : '');
+const isSuper = () => role() === 'super_admin';
+const isManager = () => role() === 'super_admin' || role() === 'admin';
+const canDownload = () => role() !== 'user';
+const icons = () => { if (window.lucide) lucide.createIcons(); };
+
+// Every server call goes to the Apps Script JSON API without Google cookies (credentials: 'omit'), so the page works
+// from any host and in browsers signed in to several Google accounts. text/plain keeps it a simple CORS request.
+const API_URL = 'https://script.google.com/macros/s/AKfycbwPszZvhZOC6CqbMiJoolh1cMESZJVRgEKlumd1LabTvm-ux72TCpqzUQK-HsHtAXaLaQ/exec';
+async function call(fn, ...args) {
+  let data;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', credentials: 'omit', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }) });
+    data = await res.json();
+  } catch (e) {
+    throw new Error('Network error. Please check your connection and try again.');
+  }
+  if (data.error) {
+    if (data.error.indexOf('SESSION_EXPIRED') !== -1) { signOutLocal(); throw new Error('Your session expired. Please sign in again.'); }
+    throw new Error(data.error.replace(/^Error:\s*/, ''));
+  }
+  return data.result;
+}
+
+function toast(msg, kind) {
+  const t = $('toast');
+  t.className = 'fixed bottom-4 right-4 z-[60] rounded-lg px-4 py-3 shadow-lg text-sm border ' +
+    (kind === 'error' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-emerald-50 border-emerald-200 text-emerald-700');
+  t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), 4000);
+}
+
+function fileIcon(name) {
+  const e = ext(name);
+  if (e === 'pdf') return '<i data-lucide="file-text" class="w-4 h-4 text-red-500"></i>';
+  if (['png', 'jpg', 'jpeg'].includes(e)) return '<i data-lucide="file-image" class="w-4 h-4 text-blue-500"></i>';
+  if (['xls', 'xlsx'].includes(e)) return '<i data-lucide="file-spreadsheet" class="w-4 h-4 text-green-600"></i>';
+  if (['doc', 'docx'].includes(e)) return '<i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>';
+  return '<i data-lucide="file" class="w-4 h-4 text-gray-400"></i>';
+}
+
+function pageNumbers(cur, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (cur <= 4) return [1, 2, 3, 4, 5, '...', total];
+  if (cur >= total - 3) return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+  return [1, '...', cur - 1, cur, cur + 1, '...', total];
+}
+
+// Pagination footer identical to DocuVault's; `key` namespaces the buttons.
+function pagination(key, page, size, total, label) {
+  const pages = Math.max(1, Math.ceil(total / size));
+  const start = total === 0 ? 0 : (page - 1) * size + 1;
+  const btn = 'p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors';
+  const wide = 'flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium text-xs';
+  let nav = '';
+  if (pages > 1) {
+    nav = '<div class="flex items-center gap-1">' +
+      '<button data-pg="' + key + ':1" class="' + btn + '"' + (page === 1 ? ' disabled' : '') + '><i data-lucide="chevrons-left" class="w-3.5 h-3.5"></i></button>' +
+      '<button data-pg="' + key + ':' + (page - 1) + '" class="' + wide + '"' + (page === 1 ? ' disabled' : '') + '><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i><span>Prev</span></button>' +
+      '<div class="flex items-center gap-1 mx-1">' + pageNumbers(page, pages).map((p) => typeof p === 'string'
+        ? '<span class="px-1 text-slate-400 font-bold">…</span>'
+        : '<button data-pg="' + key + ':' + p + '" class="min-w-[28px] h-7 px-2 rounded-lg text-xs font-semibold transition-all ' +
+          (p === page ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent') + '">' + p + '</button>').join('') + '</div>' +
+      '<button data-pg="' + key + ':' + (page + 1) + '" class="' + wide + '"' + (page === pages ? ' disabled' : '') + '><span>Next</span><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>' +
+      '<button data-pg="' + key + ':' + pages + '" class="' + btn + '"' + (page === pages ? ' disabled' : '') + '><i data-lucide="chevrons-right" class="w-3.5 h-3.5"></i></button></div>';
+  }
+  return '<div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 text-xs text-slate-500">' +
+    '<div class="flex items-center gap-3"><span>Showing <strong class="text-slate-700 font-semibold">' + start + '</strong> to <strong class="text-slate-700 font-semibold">' +
+    Math.min(page * size, total) + '</strong> of <strong class="text-slate-700 font-semibold">' + total + '</strong> ' + label + (total !== 1 ? 's' : '') + '</span>' +
+    '<div class="flex items-center gap-1.5 pl-3 border-l border-slate-200"><label class="text-slate-400 font-medium">Rows:</label>' +
+    '<select data-ps="' + key + '" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium">' +
+    [10, 15, 25, 50, 100].map((n) => '<option' + (n === size ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div></div>' + nav + '</div>';
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pg]'); if (!b || b.disabled) return;
+  const [key, p] = b.dataset.pg.split(':'); const n = Number(p);
+  if (key === 'files') { S.page = n; renderFiles(); } else if (key === 'users') { S.userPage = n; renderUsers(); } else if (key === 'logs') { S.logPage = n; renderLogs(); }
+});
+document.addEventListener('change', (e) => {
+  const s = e.target.closest('[data-ps]'); if (!s) return; const n = Number(s.value);
+  if (s.dataset.ps === 'files') { S.size = n; S.page = 1; renderFiles(); } else if (s.dataset.ps === 'users') { S.userSize = n; S.userPage = 1; renderUsers(); } else { S.logSize = n; S.logPage = 1; renderLogs(); }
+});
+
+// ---------- Modal (same look as DocuVault's Modal) ----------
+// modal({ title, message, fields:[{name,label,type,value,options,disabled,hint}], confirm, danger, cancel:false, submit })
+function modal(opts) {
+  return new Promise((resolve) => {
+    const m = $('modal');
+    const field = (f) => {
+      const cls = 'w-full px-4 py-2.5 rounded-lg border text-sm bg-slate-100 text-slate-900 border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent disabled:opacity-60';
+      const input = f.type === 'select'
+        ? '<select name="' + f.name + '" class="' + cls + '"' + (f.disabled ? ' disabled' : '') + '>' + f.options.map((o) => '<option value="' + esc(o.value) + '"' + (o.value === f.value ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>'
+        : '<input name="' + f.name + '" type="' + (f.type || 'text') + '" value="' + esc(f.value || '') + '"' + (f.disabled ? ' disabled' : '') + ' placeholder="' + esc(f.placeholder || '') + '" class="' + cls + '">';
+      return '<div><label class="block text-sm font-medium text-slate-600 mb-1.5">' + esc(f.label) + '</label>' + input + (f.hint ? '<p class="text-xs text-slate-400 mt-1">' + esc(f.hint) + '</p>' : '') + '</div>';
+    };
+    m.innerHTML = '<form class="bg-white rounded-xl shadow-2xl w-full max-w-md outline-none">' +
+      '<div class="flex items-center justify-between px-6 py-4 border-b border-slate-200"><h2 class="text-base font-semibold text-slate-900">' + esc(opts.title) + '</h2>' +
+      (opts.cancel === false ? '' : '<button type="button" data-close class="text-slate-400 hover:text-slate-500 transition-colors rounded-lg p-1"><i data-lucide="x" class="w-5 h-5"></i></button>') + '</div>' +
+      '<div class="px-6 py-5 space-y-4">' + (opts.message ? '<p class="text-sm text-slate-500">' + esc(opts.message) + '</p>' : '') + (opts.fields || []).map(field).join('') +
+      '<div data-err class="hidden flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3"><div class="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></div><p class="text-red-600 text-sm"></p></div></div>' +
+      '<div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200">' +
+      (opts.cancel === false ? '' : '<button type="button" data-close class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-slate-100 text-slate-600 hover:bg-gray-200">Cancel</button>') +
+      '<button type="submit" data-ok class="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 ' + (opts.danger ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white') + '">' + esc(opts.confirm || 'Save') + '</button></div></form>';
+    m.classList.remove('hidden'); icons();
+    const form = m.querySelector('form');
+    const first = form.querySelector('input:not([disabled]),select:not([disabled])'); if (first) first.focus();
+    const done = (v) => { m.classList.add('hidden'); m.innerHTML = ''; document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape' && opts.cancel !== false) done(null); };
+    document.addEventListener('keydown', onKey);
+    m.onclick = (e) => { if (e.target === m && opts.cancel !== false) done(null); };
+    form.querySelectorAll('[data-close]').forEach((b) => b.onclick = () => done(null));
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const v = {}; form.querySelectorAll('input,select').forEach((el) => { v[el.name] = el.value; });
+      const ok = form.querySelector('[data-ok]'), err = form.querySelector('[data-err]');
+      if (!opts.submit) return done(v);
+      ok.disabled = true; err.classList.add('hidden');
+      try { const r = await opts.submit(v); done(r === undefined ? v : r); }
+      catch (ex) { err.querySelector('p').textContent = ex.message; err.classList.remove('hidden'); ok.disabled = false; }
+    };
+  });
+}
+
+// ---------- Login ----------
+$('year').textContent = new Date().getFullYear();
+$('togglePass').addEventListener('click', () => {
+  const p = $('loginPass'); const show = p.type === 'password'; p.type = show ? 'text' : 'password';
+  $('togglePass').innerHTML = '<i data-lucide="' + (show ? 'eye-off' : 'eye') + '" class="w-4 h-4"></i>'; icons();
+});
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = $('loginError'); err.classList.add('hidden');
+  const btn = $('loginBtn'); btn.disabled = true;
+  btn.innerHTML = '<svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>Signing in...';
+  try {
+    const r = await call('login', $('loginUser').value, $('loginPass').value);
+    S.token = r.token; try { sessionStorage.setItem('dv_token', r.token); } catch (x) {}
+    $('loginPass').value = '';
+    await load();
+  } catch (ex) { err.querySelector('p').textContent = ex.message; err.classList.remove('hidden'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Sign In <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>'; icons(); }
+});
+
+function show(view) { $('loginView').classList.toggle('hidden', view !== 'login'); $('appView').classList.toggle('hidden', view !== 'app'); icons(); }
+function signOutLocal() { try { sessionStorage.removeItem('dv_token'); } catch (e) {} S.token = null; S.profile = null; show('login'); }
+
+// ---------- Shell ----------
+function applySidebar() {
+  const sb = $('sidebar'), open = S.sidebarOpen, desktop = window.innerWidth >= 768;
+  sb.style.width = desktop ? (open ? '16rem' : '4rem') : '16rem';
+  sb.style.transform = desktop || open ? 'translateX(0)' : 'translateX(-100%)';
+  $('overlay').classList.toggle('hidden', !(open && !desktop));
+  sb.querySelectorAll('.sb-text').forEach((el) => {
+    el.style.maxWidth = open ? '' : '0'; el.style.opacity = open ? '1' : '0';
+    el.style.marginLeft = open ? '' : '0'; if (el.classList.contains('max-h-6')) el.style.maxHeight = open ? '' : '0';
+  });
+  $('hamMid').style.width = open ? '0.75rem' : '1rem';
+}
+$('hamburger').addEventListener('click', () => { S.sidebarOpen = !S.sidebarOpen; applySidebar(); });
+$('sidebarClose').addEventListener('click', () => { S.sidebarOpen = false; applySidebar(); });
+$('overlay').addEventListener('click', () => { S.sidebarOpen = false; applySidebar(); });
+window.addEventListener('resize', applySidebar);
+
+function renderShell() {
+  const p = S.profile, name = p.full_name || p.username;
+  const items = [['files', 'Files', 'files']];
+  if (isManager()) items.push(['users', 'Users', 'users'], ['logs', 'Audit Logs', 'clipboard-list']);
+  $('navItems').innerHTML = items.map(([k, label, icon]) => {
+    const on = S.view === k;
+    return '<button data-nav="' + k + '" title="' + label + '" class="w-full flex items-center h-11 px-3 rounded-xl text-sm font-medium transition-colors duration-150 border ' +
+      (on ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent') + '">' +
+      '<div class="w-5 h-5 flex items-center justify-center flex-shrink-0"><i data-lucide="' + icon + '" class="w-[18px] h-[18px] ' + (on ? 'text-blue-600' : 'text-slate-400') + '"></i></div>' +
+      '<div class="sb-text flex items-center flex-1 min-w-0 max-w-40 opacity-100 ml-3"><span class="truncate">' + label + '</span>' + (on ? '<span class="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>' : '') + '</div></button>';
+  }).join('');
+  $('sbInitial').textContent = name.charAt(0);
+  $('sbName').textContent = name;
+  $('sbRole').innerHTML = p.role === 'super_admin' ? '<span class="text-xs font-semibold text-amber-500">⭐ Super Admin</span>'
+    : p.role === 'admin' ? '<span class="text-xs font-semibold text-purple-500">🛡 Admin</span>' : '<span class="text-xs font-semibold text-blue-500">User</span>';
+  $('hdInitials').textContent = name.slice(0, 2).toUpperCase();
+  $('hdName').textContent = name;
+  $('hdRole').textContent = ROLE_LABEL[p.role] || 'User';
+  $('hdRole').className = 'text-xs font-medium ' + (p.role === 'super_admin' ? 'text-amber-500' : p.role === 'admin' ? 'text-purple-500' : 'text-slate-400');
+  $('pageTitle').textContent = { files: 'Files', users: 'User Management', logs: 'Audit Logs' }[S.view];
+  applySidebar(); icons();
+}
+$('navItems').addEventListener('click', (e) => { const b = e.target.closest('[data-nav]'); if (b) go(b.dataset.nav); });
+
+async function go(view) {
+  S.view = view;
+  ['files', 'users', 'logs'].forEach((v) => $(v + 'View').classList.toggle('hidden', v !== view));
+  if (window.innerWidth < 768) S.sidebarOpen = false;
+  renderShell();
+  if (view === 'users') await loadUsers();
+  if (view === 'logs') await loadLogs();
+}
+
+$('logoutBtn').addEventListener('click', async () => {
+  $('logoutBtn').disabled = true;
+  try { await call('logout', S.token); } catch (e) {}
+  $('logoutBtn').disabled = false; signOutLocal();
+});
+
+// Edit profile: name (locked for non-super admins once set) and password.
+$('profileBtn').addEventListener('click', async () => {
+  const p = S.profile, locked = p.role !== 'super_admin' && p.name_locked;
+  await modal({ title: 'Edit Profile', confirm: 'Save Changes', fields: [
+    { name: 'full_name', label: 'Full Name', value: p.full_name || '', disabled: locked, hint: locked ? 'Your name is locked. Contact a Super Admin to change it.' : '' },
+    { name: 'current', label: 'Current Password', type: 'password', placeholder: 'Only to change your password' },
+    { name: 'next', label: 'New Password', type: 'password', placeholder: 'Min. 6 characters' },
+    { name: 'confirm', label: 'Confirm New Password', type: 'password' }],
+    submit: async (v) => {
+      if (v.next || v.current) {
+        if (v.next !== v.confirm) throw new Error('New passwords do not match.');
+        await call('changePassword', S.token, v.current, v.next);
+      }
+      if (!locked && v.full_name !== undefined && v.full_name.trim() && v.full_name.trim() !== (p.full_name || '')) {
+        S.profile = await call('setFullName', S.token, v.full_name);
+      }
+      renderShell(); toast('Profile updated.');
+    } });
+});
+
+// ---------- Data ----------
+async function load() {
+  const d = await call('listData', S.token);
+  S.profile = d.profile; S.files = d.files; S.folders = d.folders;
+  $('newFolderBtn').classList.toggle('hidden', !isManager());
+  show('app'); renderShell(); renderFolderSelect(); renderUploadZone(); renderFiles();
+  const p = d.profile;
+  if (p.role !== 'super_admin' && !p.name_locked && !p.full_name) askName();
+}
+
+async function reloadFiles() {
+  const d = await call('listData', S.token);
+  S.files = d.files; S.folders = d.folders; renderFolderSelect(); renderUploadZone(); renderFiles();
+}
+
+async function askName() {
+  await modal({ title: 'Set Your Full Name', cancel: false, confirm: 'Save Name',
+    message: 'Please enter your full name. It appears on your uploads and in the audit log, and cannot be changed later.',
+    fields: [{ name: 'name', label: 'Full Name', placeholder: 'e.g. Juan Dela Cruz' }],
+    submit: async (v) => { S.profile = await call('setFullName', S.token, v.name); renderShell(); } });
+}
+
+// ---------- Folder dropdown (DocuVault's FolderSelect) ----------
+function folderTree() {
+  const kids = {}; const ids = new Set(S.folders.map((f) => f.id));
+  S.folders.forEach((f) => { const p = f.parent_folder_id && ids.has(f.parent_folder_id) ? f.parent_folder_id : ''; (kids[p] = kids[p] || []).push(f); });
+  Object.values(kids).forEach((l) => l.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })));
+  return kids;
+}
+function folderDepth(id) { let d = 0, f = S.folders.find((x) => x.id === id); while (f && f.parent_folder_id) { d++; f = S.folders.find((x) => x.id === f.parent_folder_id); } return d; }
+
+function renderFolderSelect() {
+  const sel = S.folders.find((f) => f.id === S.folder);
+  const kids = folderTree();
+  const check = '<i data-lucide="check" class="w-3.5 h-3.5 text-indigo-600 flex-shrink-0"></i>';
+  const item = (f, depth) => {
+    const has = (kids[f.id] || []).length > 0, open = S.expanded.has(f.id), on = S.folder === f.id;
+    let h = '<li><div class="folder-row group flex items-center gap-1 pr-2 transition-colors ' + (on ? 'bg-indigo-50' : 'hover:bg-slate-50') + '" style="padding-left:' + (8 + depth * 16) + 'px">' +
+      '<button data-fexp="' + f.id + '" class="w-5 h-5 flex items-center justify-center flex-shrink-0 rounded ' + (has ? 'text-slate-400 hover:text-slate-600' : 'text-transparent cursor-default') + '">' +
+      (has ? '<i data-lucide="' + (open ? 'chevron-down' : 'chevron-right') + '" class="w-3 h-3"></i>' : '<span class="w-3 h-3"></span>') + '</button>' +
+      '<button data-fsel="' + f.id + '" class="flex-1 flex items-center gap-2 py-2 text-sm text-left min-w-0">' +
+      '<i data-lucide="' + (has && open ? 'folder-open' : 'folder') + '" class="w-4 h-4 flex-shrink-0 ' + (on ? 'text-indigo-500' : 'text-slate-400') + '"></i>' +
+      '<span class="truncate flex-1 ' + (on ? 'text-indigo-700 font-medium' : 'text-slate-700') + '">' + esc(f.name) + '</span>' + (on ? check : '') + '</button>';
+    if (isManager()) {
+      h += '<div class="folder-actions flex items-center gap-0.5 opacity-0 transition-opacity flex-shrink-0">' +
+        (depth < 3 ? '<button data-fsub="' + f.id + '" title="Add sub-folder" class="p-1 rounded text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"><i data-lucide="plus" class="w-3 h-3"></i></button>' : '') +
+        (isSuper() ? '<button data-fren="' + f.id + '" title="Rename" class="p-1 rounded text-slate-300 hover:text-indigo-600 hover:bg-indigo-50"><i data-lucide="pencil" class="w-3 h-3"></i></button>' : '') +
+        '<button data-fdel="' + f.id + '" title="Delete" class="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div>';
+    }
+    h += '</div></li>';
+    if (has && open) h += kids[f.id].map((c) => item(c, depth + 1)).join('');
+    return h;
+  };
+  const q = S.folderSearch.toLowerCase();
+  const list = q
+    ? (S.folders.filter((f) => f.name.toLowerCase().includes(q)).map((f) => '<li><button data-fsel="' + f.id + '" class="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left ' +
+        (S.folder === f.id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700 hover:bg-slate-50') + '"><i data-lucide="folder" class="w-4 h-4 flex-shrink-0 text-slate-400"></i><span class="flex-1 truncate">' + esc(f.name) +
+        '</span>' + (f.parent_folder_id ? '<span class="text-xs text-slate-400 flex-shrink-0">sub</span>' : '') + (S.folder === f.id ? check : '') + '</button></li>').join('') ||
+       '<li class="px-3 py-3 text-xs text-slate-400 text-center">No folders found</li>')
+    : (kids[''] || []).map((f) => item(f, 0)).join('');
+  $('folderSelect').innerHTML =
+    '<button data-ftoggle class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-indigo-400 hover:text-indigo-700 ' + (S.folderOpen ? 'border-indigo-400 ring-2 ring-indigo-500/20' : '') + '">' +
+    '<span class="flex items-center gap-2 truncate"><i data-lucide="folder-open" class="w-4 h-4 text-slate-400 flex-shrink-0"></i><span class="truncate font-medium">' + esc(sel ? sel.name : 'Month') + '</span></span>' +
+    '<i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ' + (S.folderOpen ? 'rotate-180' : '') + '"></i></button>' +
+    (S.folderOpen ? '<div class="absolute top-full left-0 mt-1 w-full sm:w-64 max-w-[calc(100vw-2rem)] z-30 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">' +
+      '<div class="p-2 border-b border-slate-100"><div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200"><i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>' +
+      '<input id="folderSearch" type="text" value="' + esc(S.folderSearch) + '" placeholder="Search Month / Folders..." class="w-full bg-transparent text-sm text-slate-700 placeholder-slate-400 focus:outline-none"></div></div>' +
+      '<ul class="max-h-64 overflow-y-auto py-1"><li><button data-fsel="" class="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left ' + (S.folder === null ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700 hover:bg-slate-50') + '">' +
+      '<i data-lucide="folder-open" class="w-4 h-4 flex-shrink-0 text-slate-400"></i><span class="flex-1">All Files</span>' + (S.folder === null ? check : '') + '</button></li>' + list + '</ul>' +
+      (isManager() ? '<div class="border-t border-slate-100 p-1.5"><button data-fnew class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i>New Folder</button></div>' : '') +
+      '</div>' : '');
+  icons();
+  const fs = $('folderSearch');
+  if (fs) { fs.focus(); fs.setSelectionRange(fs.value.length, fs.value.length); fs.oninput = (e) => { S.folderSearch = e.target.value; renderFolderSelect(); }; }
+}
+
+$('folderSelect').addEventListener('click', async (e) => {
+  const t = e.target.closest('button'); if (!t) return;
+  e.stopPropagation();
+  if (t.hasAttribute('data-ftoggle')) { S.folderOpen = !S.folderOpen; S.folderSearch = ''; return renderFolderSelect(); }
+  if (t.dataset.fexp !== undefined) { const id = t.dataset.fexp; S.expanded.has(id) ? S.expanded.delete(id) : S.expanded.add(id); return renderFolderSelect(); }
+  if (t.dataset.fsel !== undefined) {
+    const id = t.dataset.fsel || null;
+    const has = id && S.folders.some((f) => f.parent_folder_id === id);
+    S.folder = id; S.page = 1; S.selected.clear();
+    if (has && !S.folderSearch) { S.expanded.add(id); renderFolderSelect(); } else { S.folderOpen = false; renderFolderSelect(); }
+    renderUploadZone(); return renderFiles();
+  }
+  S.folderOpen = false; renderFolderSelect();
+  if (t.hasAttribute('data-fnew')) return createFolderPrompt(null);
+  if (t.dataset.fsub) return createFolderPrompt(t.dataset.fsub);
+  if (t.dataset.fren) {
+    const f = S.folders.find((x) => x.id === t.dataset.fren);
+    const v = await modal({ title: 'Rename Folder', confirm: 'Rename', fields: [{ name: 'name', label: 'New Name', value: f.name }], submit: (x) => call('renameFolder', S.token, f.id, x.name) });
+    if (v) await reloadFiles();
+  }
+  if (t.dataset.fdel) {
+    const f = S.folders.find((x) => x.id === t.dataset.fdel);
+    const v = await modal({ title: 'Delete Folder', danger: true, confirm: 'Delete', message: 'Delete "' + f.name + '"? This cannot be undone.', submit: () => call('deleteFolder', S.token, f.id) });
+    if (v) { if (S.folder === f.id) S.folder = null; await reloadFiles(); }
+  }
+});
+document.addEventListener('click', (e) => { if (S.folderOpen && !e.target.closest('#folderSelect')) { S.folderOpen = false; renderFolderSelect(); } });
+$('newFolderBtn').addEventListener('click', () => createFolderPrompt(null));
+
+async function createFolderPrompt(parentId) {
+  const parent = S.folders.find((f) => f.id === parentId);
+  const v = await modal({ title: parent ? 'New Sub-folder in "' + parent.name + '"' : 'Create Folder', confirm: 'Create',
+    fields: [{ name: 'name', label: parent ? 'Sub-folder Name' : 'Folder Name' }], submit: (x) => call('createFolder', S.token, x.name, parentId || '') });
+  if (v) await reloadFiles();
+}
+
+// ---------- Files list ----------
+function inFolder() {
+  if (!S.folder) return S.files;
+  const set = new Set([S.folder]); let grew = true;
+  while (grew) { grew = false; S.folders.forEach((f) => { if (f.parent_folder_id && set.has(f.parent_folder_id) && !set.has(f.id)) { set.add(f.id); grew = true; } }); }
+  return S.files.filter((f) => set.has(f.folder_id));
+}
+
+function renderFiles() {
+  const base = inFolder();
+  const count = (k) => base.filter((f) => f.name.toUpperCase().includes(k)).length;
+  $('pills').innerHTML = [['ALL', 'All', base.length], ['WC', 'WC', count('WC')], ['EB', 'EB', count('EB')], ['BP', 'BP', count('BP')]].map(([k, label, n]) => {
+    const on = S.pill === k;
+    return '<button data-pill="' + k + '" class="px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ' + (on ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'hover:text-slate-900 text-slate-500 hover:bg-slate-200/50') + '">' +
+      '<span>' + label + '</span><span class="text-[10px] px-1.5 rounded-full font-mono ' + (on ? 'bg-indigo-50 text-indigo-600 font-bold' : 'bg-slate-200/70 text-slate-500') + '">' + n + '</span></button>';
+  }).join('');
+
+  let list = base;
+  if (S.pill !== 'ALL') list = list.filter((f) => f.name.toUpperCase().includes(S.pill));
+  if (S.q) { const q = S.q.toUpperCase(); list = list.filter((f) => f.name.toUpperCase().includes(q)); }
+  if (S.sort) { const dir = S.sort === 'asc' ? 1 : -1; list = list.slice().sort((a, b) => dir * a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })); }
+  $('countLabel').textContent = list.length + ' file' + (list.length !== 1 ? 's' : '');
+  $('searchClear').classList.toggle('hidden', !S.q);
+
+  if (!list.length) {
+    $('fileTable').innerHTML = '<div class="flex flex-col items-center justify-center py-16 text-center"><i data-lucide="file-text" class="w-12 h-12 text-gray-300 mb-3"></i>' +
+      '<p class="text-slate-500 font-medium">No files found</p><p class="text-slate-400 text-sm mt-1">Upload a file to get started.</p></div>';
+    return icons();
+  }
+  const pages = Math.max(1, Math.ceil(list.length / S.size)); S.page = Math.min(Math.max(1, S.page), pages);
+  const items = list.slice((S.page - 1) * S.size, S.page * S.size);
+  S.pageItems = items; S.visible = list;
+  const showDelete = isManager();
+  const allOn = items.length > 0 && items.every((f) => S.selected.has(f.id));
+  const btn = (attr, id, icon, hover, label) => '<button ' + attr + '="' + esc(id) + '" class="p-2 sm:p-1.5 rounded-lg transition-colors text-slate-400 ' + hover + '" aria-label="' + label + '"><i data-lucide="' + icon + '" class="w-4 h-4"></i></button>';
+  $('fileTable').innerHTML =
+    (showDelete && S.selected.size ? '<div class="flex flex-col sm:flex-row sm:items-center justify-between bg-red-50/90 border border-red-200/90 rounded-xl px-4 py-2.5 mb-3 shadow-xs gap-2">' +
+      '<div class="flex items-center gap-2 flex-wrap"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span><span class="text-xs sm:text-sm font-semibold text-red-950">' + S.selected.size + ' file' + (S.selected.size !== 1 ? 's' : '') + ' selected</span>' +
+      (S.selected.size < list.length ? '<button data-selall class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline ml-1">Select all ' + list.length + ' files</button>' : '') + '</div>' +
+      '<div class="flex items-center gap-2 self-end sm:self-auto"><button data-selclear class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-white hover:text-slate-900 transition-colors">Clear selection</button>' +
+      '<button data-bulkdel class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i><span>Delete Selected (' + S.selected.size + ')</span></button></div></div>' : '') +
+    '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-200">' +
+    (showDelete ? '<th class="w-10 py-3 px-3 text-center"><input type="checkbox" data-selpage ' + (allOn ? 'checked' : '') + ' class="w-4 h-4 rounded border-slate-300 cursor-pointer accent-indigo-600"></th>' : '') +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500"><button data-sort class="inline-flex items-center gap-1.5 rounded transition-colors hover:text-slate-800 ' + (S.sort ? 'text-indigo-600 hover:text-indigo-700' : '') + '">Name' +
+    '<i data-lucide="' + (S.sort === 'asc' ? 'arrow-up' : S.sort === 'desc' ? 'arrow-down' : 'arrow-up-down') + '" class="w-3.5 h-3.5 ' + (S.sort ? '' : 'opacity-50') + '"></i></button></th>' +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">Folder</th><th class="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">Uploaded By</th>' +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500 hidden lg:table-cell">Date</th><th class="text-right py-3 px-4 font-medium text-slate-500">Actions</th></tr></thead>' +
+    '<tbody class="divide-y divide-slate-100">' + items.map((f) => {
+      const on = S.selected.has(f.id);
+      return '<tr class="hover:bg-slate-100/60 transition-colors group ' + (on ? 'bg-indigo-50/60 hover:bg-indigo-50' : '') + '">' +
+        (showDelete ? '<td class="w-10 py-3 px-3 text-center"><input type="checkbox" data-sel="' + esc(f.id) + '" ' + (on ? 'checked' : '') + ' class="w-4 h-4 rounded border-slate-300 cursor-pointer accent-indigo-600"></td>' : '') +
+        '<td class="py-3 px-4"><div class="flex items-start sm:items-center gap-2.5"><div class="mt-0.5 sm:mt-0 flex-shrink-0">' + fileIcon(f.name) + '</div>' +
+        '<div class="min-w-0 flex-1"><button data-view="' + esc(f.id) + '" class="text-indigo-600 hover:underline font-medium transition-colors text-left break-all sm:break-normal">' + esc(f.name) + '</button>' +
+        '<div class="sm:hidden flex items-center gap-1.5 text-xs text-slate-400 mt-1 flex-wrap">' + (f.folder_name ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium text-[11px]">' + esc(f.folder_name) + '</span>' : '') +
+        '<span class="truncate max-w-[120px]">' + esc(f.uploader) + '</span><span>·</span><span>' + esc(fmtDate(f.created_at)) + '</span></div></div></div></td>' +
+        '<td class="py-3 px-4 hidden sm:table-cell">' + (f.folder_name ? '<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-medium">' + esc(f.folder_name) + '</span>' : '<span class="text-gray-400 text-xs italic">—</span>') + '</td>' +
+        '<td class="py-3 px-4 hidden md:table-cell text-slate-600 text-xs">' + (f.uploader ? esc(f.uploader) : '<span class="text-gray-400 italic">—</span>') + '</td>' +
+        '<td class="py-3 px-4 hidden lg:table-cell text-slate-500 text-xs">' + esc(fmtDate(f.created_at)) + '</td>' +
+        '<td class="py-3 px-3 sm:px-4"><div class="flex items-center justify-end gap-1 sm:gap-1.5">' +
+        btn('data-view', f.id, 'eye', 'hover:text-indigo-600 hover:bg-indigo-50', 'View') +
+        (isSuper() ? btn('data-rename', f.id, 'pencil', 'hover:text-blue-600 hover:bg-blue-50', 'Rename') : '') +
+        (showDelete ? btn('data-delete', f.id, 'trash-2', 'hover:text-red-500 hover:bg-red-50', 'Delete') : '') +
+        '</div></td></tr>';
+    }).join('') + '</tbody></table></div>' + pagination('files', S.page, S.size, list.length, 'file');
+  const pageBox = $('fileTable').querySelector('[data-selpage]');
+  if (pageBox) pageBox.indeterminate = !allOn && items.some((f) => S.selected.has(f.id));
+  icons();
+}
+
+$('pills').addEventListener('click', (e) => { const b = e.target.closest('[data-pill]'); if (!b) return; S.pill = b.dataset.pill; S.page = 1; S.selected.clear(); renderFiles(); });
+$('search').addEventListener('input', (e) => { S.q = e.target.value.trim(); S.page = 1; S.selected.clear(); renderFiles(); });
+$('searchClear').addEventListener('click', () => { $('search').value = ''; S.q = ''; renderFiles(); });
+$('fileTable').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-view],[data-rename],[data-delete],[data-sel],[data-selpage],[data-selall],[data-selclear],[data-bulkdel],[data-sort]'); if (!t) return;
+  if (t.dataset.sel) { t.checked ? S.selected.add(t.dataset.sel) : S.selected.delete(t.dataset.sel); return renderFiles(); }
+  if (t.hasAttribute('data-selpage')) { const all = S.pageItems.every((f) => S.selected.has(f.id)); S.pageItems.forEach((f) => all ? S.selected.delete(f.id) : S.selected.add(f.id)); return renderFiles(); }
+  if (t.hasAttribute('data-selall')) { S.visible.forEach((f) => S.selected.add(f.id)); return renderFiles(); }
+  if (t.hasAttribute('data-selclear')) { S.selected.clear(); return renderFiles(); }
+  if (t.hasAttribute('data-bulkdel')) return deleteFiles(Array.from(S.selected));
+  if (t.hasAttribute('data-sort')) { S.sort = S.sort === null ? 'asc' : S.sort === 'asc' ? 'desc' : null; S.page = 1; return renderFiles(); }
+  if (t.dataset.view) return openPreview(t.dataset.view);
+  if (t.dataset.rename) return renameFile(t.dataset.rename);
+  if (t.dataset.delete) return deleteFiles([t.dataset.delete]);
+});
+
+async function renameFile(id) {
+  const f = S.files.find((x) => x.id === id);
+  const v = await modal({ title: 'Rename File', confirm: 'Rename', fields: [{ name: 'name', label: 'New Name', value: f.name }], submit: (x) => call('renameFile', S.token, id, x.name) });
+  if (v) await reloadFiles();
+}
+async function deleteFiles(ids) {
+  const one = ids.length === 1, f = S.files.find((x) => x.id === ids[0]);
+  const v = await modal({ title: one ? 'Delete File' : 'Delete Selected Files', danger: true, confirm: one ? 'Delete' : 'Delete ' + ids.length + ' Files',
+    message: one ? 'Are you sure you want to delete "' + (f ? f.name : '') + '"? This action cannot be undone.' : 'Are you sure you want to delete ' + ids.length + ' selected files? This action cannot be undone.',
+    submit: () => call('deleteFiles', S.token, ids) });
+  if (v) { S.selected.clear(); await reloadFiles(); }
+}
+
+// ---------- Upload zone (DocuVault's UploadZone) ----------
+function uploadableFolders() {
+  if (isSuper() || !S.profile.branch) return S.folders;
+  const b = S.profile.branch.toUpperCase();
+  return S.folders.filter((f) => f.name.toUpperCase() === b || S.folders.some((p) => p.name.toUpperCase() === b && f.parent_folder_id === p.id));
+}
+function renderUploadZone() {
+  const q = S.queue, total = q.length;
+  const done = q.filter((x) => x.status === 'done').length, up = q.filter((x) => x.status === 'uploading').length, failed = q.filter((x) => x.status === 'error').length;
+  const totalBytes = q.reduce((a, x) => a + x.size, 0), sent = q.reduce((a, x) => a + (x.status === 'done' ? x.size : x.sent), 0);
+  const pct = totalBytes ? Math.min(100, Math.round((sent / totalBytes) * 100)) : 0;
+  const target = S.folder || S.uploadFolder;
+  let h = '<div class="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-wrap">' +
+    '<button data-up="pick" class="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 px-3.5 py-2.5 rounded-xl border text-sm transition-all text-slate-700 border-slate-200 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 bg-white shadow-xs ' + (S.uploading ? 'opacity-60 cursor-not-allowed' : '') + '"' + (S.uploading ? ' disabled' : '') + '>' +
+    '<i data-lucide="paperclip" class="w-4 h-4 text-indigo-500 flex-shrink-0"></i><span class="font-semibold">' + (total ? 'Add more files (' + total + ' selected)' : 'Choose files') + '</span>' +
+    '<span class="text-xs text-slate-400 hidden sm:inline">(Multiple files supported · Unlimited size)</span></button>';
+  if (total && !S.folder) {
+    h += '<select data-up="folder" class="w-full sm:w-auto px-3.5 py-2.5 rounded-xl border text-sm transition-colors bg-white text-slate-800 border-slate-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 ' + (S.uploadFolder ? '' : 'border-amber-300 text-slate-500') + '"' + (S.uploading ? ' disabled' : '') + '>' +
+      '<option value="" disabled' + (S.uploadFolder ? '' : ' selected') + '>— Select Month / Folder —</option>' + uploadableFolders().map((f) => '<option value="' + f.id + '"' + (f.id === S.uploadFolder ? ' selected' : '') + '>' + esc(f.name) + '</option>').join('') + '</select>';
+  }
+  if (total) {
+    h += '<div class="flex items-center gap-2 w-full sm:w-auto">' + (!S.uploading
+      ? '<button data-up="start" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"' + (target ? '' : ' disabled') + '><i data-lucide="upload" class="w-4 h-4"></i><span>Upload ' + total + ' ' + (total === 1 ? 'file' : 'files') + '</span></button>' +
+        '<button data-up="list" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1.5"><i data-lucide="list-filter" class="w-4 h-4 text-slate-500"></i><span>' + (S.showQueue ? 'Hide list' : 'View list') + '</span></button>' +
+        '<button data-up="clear" class="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-colors" title="Clear all selected files"><i data-lucide="trash-2" class="w-4 h-4"></i></button>'
+      : '<button disabled class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-xs cursor-default"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-600"></i><span>Uploading (' + done + '/' + total + ')</span></button>' +
+        '<button data-up="list" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">' + (S.showQueue ? 'Hide details' : 'Show details') + '</button>') + '</div>';
+  }
+  h += '</div>';
+  if (S.uploading) {
+    h += '<div class="w-full space-y-1.5 pt-1 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80"><div class="flex items-center justify-between text-xs text-slate-600 font-medium">' +
+      '<span class="truncate mr-2">Uploading ' + up + ' in parallel · ' + done + ' of ' + total + ' completed' + (failed ? ' (' + failed + ' failed)' : '') + '</span>' +
+      '<span class="font-semibold text-indigo-600 font-mono flex-shrink-0">' + fmtSize(sent) + ' / ' + fmtSize(totalBytes) + ' (' + pct + '%)</span></div>' +
+      '<div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 rounded-full transition-all duration-150" style="width:' + Math.max(3, pct) + '%"></div></div></div>';
+  }
+  if (total && S.showQueue) {
+    const st = (x) => x.status === 'done' ? '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i>' : x.status === 'uploading' ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-500 flex-shrink-0"></i>'
+      : x.status === 'error' ? '<i data-lucide="alert-circle" class="w-4 h-4 text-red-500 flex-shrink-0"></i>' : '<i data-lucide="paperclip" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>';
+    const badge = (x) => x.status === 'uploading' ? '<span class="text-indigo-600 font-mono font-medium text-[11px]">' + x.progress + '%</span>' : x.status === 'done' ? '<span class="text-emerald-600 font-medium text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded">Done</span>'
+      : x.status === 'error' ? '<span class="text-red-600 font-medium text-[11px] bg-red-50 px-1.5 py-0.5 rounded" title="' + esc(x.error) + '">Failed</span>' : '<span class="text-slate-400 text-[11px]">Queued</span>';
+    h += '<div class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs"><div class="flex items-center justify-between px-3.5 py-2 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">' +
+      '<span>Selected Files (' + total + ' total · ' + fmtSize(totalBytes) + ')</span>' + (S.uploading ? '' : '<button data-up="clear" class="text-red-500 hover:underline font-normal text-[11px]">Clear all</button>') + '</div>' +
+      '<div class="max-h-56 overflow-y-auto divide-y divide-slate-100 text-xs">' + q.map((x, i) => '<div class="flex items-center justify-between px-3.5 py-2 hover:bg-slate-50/60 transition-colors gap-2">' +
+        '<div class="min-w-0 flex-1 flex items-center gap-2">' + st(x) + '<span class="truncate font-medium text-slate-800" title="' + esc(x.name) + '">' + esc(x.name) + '</span><span class="text-slate-400 font-mono text-[11px] flex-shrink-0">' + fmtSize(x.size) + '</span></div>' +
+        '<div class="flex items-center gap-2 flex-shrink-0">' + badge(x) + (S.uploading ? '' : '<button data-up="rm" data-i="' + i + '" class="p-1 text-slate-300 hover:text-red-500 transition-colors" title="Remove file"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>') + '</div></div>').join('') + '</div></div>';
+  }
+  if (S.upMsg) h += '<div class="flex items-center gap-2 p-3 rounded-xl text-xs sm:text-sm ' + (S.upMsg.err ? 'bg-red-50 border border-red-200 text-red-600' : 'bg-emerald-50 border border-emerald-200 text-emerald-700') + '"><span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ' + (S.upMsg.err ? 'bg-red-500' : 'bg-emerald-500') + '"></span><p class="flex-1 font-medium">' + esc(S.upMsg.text) + '</p></div>';
+  $('uploadZone').innerHTML = h; icons();
+}
+
+$('uploadZone').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-up]'); if (!t || t.disabled) return;
+  const a = t.dataset.up;
+  if (a === 'pick') { $('fileInput').value = ''; $('fileInput').click(); }
+  if (a === 'list') { S.showQueue = !S.showQueue; renderUploadZone(); }
+  if (a === 'clear') { S.queue = []; S.upMsg = null; renderUploadZone(); }
+  if (a === 'rm') { S.queue.splice(Number(t.dataset.i), 1); renderUploadZone(); }
+  if (a === 'start') startUploads();
+});
+$('uploadZone').addEventListener('change', (e) => { if (e.target.dataset.up === 'folder') { S.uploadFolder = e.target.value; renderUploadZone(); } });
+$('uploadZone').addEventListener('dragover', (e) => { e.preventDefault(); });
+$('uploadZone').addEventListener('drop', (e) => { e.preventDefault(); addFiles(e.dataTransfer.files); });
+$('fileInput').addEventListener('change', (e) => addFiles(e.target.files));
+
+function addFiles(list) {
+  S.upMsg = null;
+  const bad = [];
+  Array.from(list || []).forEach((file) => {
+    if (ALLOWED.indexOf(ext(file.name)) === -1) { bad.push(file.name); return; }
+    if (S.queue.some((x) => x.name === file.name && x.size === file.size && x.status !== 'error')) return;
+    S.queue.push({ file, name: file.name, size: file.size, status: 'pending', progress: 0, sent: 0, error: '' });
+  });
+  if (bad.length) S.upMsg = { err: true, text: 'Skipped (type not allowed): ' + bad.join(', ') };
+  renderUploadZone();
+}
+
+function readSliceB64(blob) {
+  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result).split(',')[1] || ''); r.onerror = () => reject(r.error); r.readAsDataURL(blob); });
+}
+
+async function startUploads() {
+  const folderId = S.folder || S.uploadFolder; if (!folderId) return;
+  S.uploading = true; S.upMsg = null;
+  const pending = S.queue.filter((x) => x.status === 'pending' || x.status === 'error');
+  pending.forEach((x) => { x.status = 'pending'; x.progress = 0; x.sent = 0; x.error = ''; });
+  renderUploadZone();
+  let next = 0;
+  const worker = async () => {
+    while (next < pending.length) {
+      const x = pending[next++];
+      try {
+        x.status = 'uploading'; renderUploadZone();
+        const s = await call('startUpload', S.token, folderId, x.name, x.size, x.file.type || MIME[ext(x.name)] || '');
+        let start = 0;
+        while (start < x.size) {
+          const b64 = await readSliceB64(x.file.slice(start, start + s.chunk));
+          const r = await call('uploadChunk', S.token, s.uploadId, start, b64);
+          start = r.done ? x.size : r.next;
+          x.sent = start; x.progress = Math.min(99, Math.round((start / x.size) * 100)); renderUploadZone();
+        }
+        x.status = 'done'; x.progress = 100;
+      } catch (ex) { x.status = 'error'; x.error = ex.message; }
+      renderUploadZone();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  S.uploading = false;
+  const ok = pending.filter((x) => x.status === 'done').length, bad = pending.length - ok;
+  S.upMsg = bad ? { err: true, text: ok + ' uploaded, ' + bad + ' failed. Click Upload to retry the failed ones.' } : { err: false, text: ok + ' file' + (ok === 1 ? '' : 's') + ' uploaded successfully.' };
+  if (!bad) S.queue = [];
+  renderUploadZone();
+  if (ok) { try { await reloadFiles(); } catch (e) {} }
+}
+
+// ---------- Preview (DocuVault's FileViewModal) ----------
+function b64ToBytes(b64) { const bin = atob(b64); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+function previewFrame(name, inner, sizeLabel) {
+  return '<div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[94vh] sm:h-[90vh] flex flex-col overflow-hidden">' +
+    '<div class="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-100 flex-shrink-0 gap-2"><div class="flex items-center gap-2 min-w-0">' +
+    '<h2 class="text-sm font-semibold text-slate-800 truncate max-w-[150px] sm:max-w-md" title="' + esc(name) + '">' + esc(name) + '</h2>' +
+    (sizeLabel ? '<span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-mono font-medium hidden sm:inline">' + sizeLabel + '</span>' : '') + '</div>' +
+    '<div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0" id="pvActions"></div>' +
+    '<button data-pvclose class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" aria-label="Close"><i data-lucide="x" class="w-4 h-4"></i></button></div>' +
+    '<div class="flex-1 overflow-hidden bg-slate-50 flex flex-col" id="pvBody">' + inner + '</div></div>';
+}
+const spinner = '<div class="flex flex-col items-center justify-center h-full gap-3"><svg class="animate-spin w-7 h-7 text-indigo-500" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><p id="pvPct" class="text-xs text-slate-500 font-medium"></p></div>';
+
+async function openPreview(id) {
+  const f = S.files.find((x) => x.id === id); if (!f) return;
+  closePreview();
+  S.preview = { id, url: null, name: f.name };
+  const pv = $('preview'); pv.innerHTML = previewFrame(f.name, spinner, fmtSize(f.size)); pv.classList.remove('hidden'); icons();
+  try {
+    const parts = []; let start = 0, size = 1;
+    while (start < size) {
+      const r = await call('getChunk', S.token, id, start);
+      if (!S.preview || S.preview.id !== id) return;
+      parts.push(b64ToBytes(r.data)); start = r.next; size = r.size;
+      const p = $('pvPct'); if (p && size > 8388608) p.textContent = 'Loading ' + Math.round((start / size) * 100) + '%';
+    }
+    const e = ext(f.name), url = URL.createObjectURL(new Blob(parts, { type: MIME[e] || 'application/octet-stream' }));
+    S.preview.url = url;
+    $('pvActions').innerHTML = canDownload()
+      ? '<button data-pvdl class="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"><i data-lucide="download" class="w-3.5 h-3.5"></i><span>Download</span></button>'
+      : '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80"><i data-lucide="shield-alert" class="w-3.5 h-3.5"></i><span>View Only</span></span>';
+    let body;
+    if (e === 'pdf') {
+      $('pvBody').innerHTML = '<div id="pdfPages" class="h-full overflow-auto p-3 sm:p-4 flex flex-col items-center gap-4"></div>'; icons();
+      const data = new Uint8Array(parts.reduce((a, p) => a + p.length, 0));
+      let off = 0; parts.forEach((p) => { data.set(p, off); off += p.length; });
+      return renderPdf(data, id);
+    }
+    else if (['png', 'jpg', 'jpeg'].includes(e)) body = '<div class="flex items-center justify-center h-full p-4 sm:p-6 overflow-auto"><img src="' + url + '" alt="' + esc(f.name) + '"' + (canDownload() ? '' : ' oncontextmenu="return false"') + ' class="max-w-full max-h-full object-contain rounded-lg shadow-sm select-none"></div>';
+    else body = '<div class="flex flex-col items-center justify-center h-full gap-5 p-6"><div class="w-20 h-20 rounded-2xl bg-white border border-slate-200 flex items-center justify-center">' + fileIcon(f.name).replace('w-4 h-4', 'w-10 h-10') + '</div>' +
+      '<div class="text-center"><p class="text-slate-700 font-medium text-sm">' + esc(f.name) + '</p><p class="text-slate-400 text-xs mt-1">This file cannot be previewed in the browser.</p></div>' +
+      (canDownload() ? '<button data-pvdl class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"><i data-lucide="download" class="w-4 h-4"></i>Download</button>'
+        : '<div class="bg-amber-50 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-800 max-w-xs text-center space-y-0.5"><p class="font-semibold text-amber-900">Preview Unavailable · Download Restricted</p><p>This file cannot be previewed in the browser. View-only accounts are restricted from downloading files.</p></div>') + '</div>';
+    $('pvBody').innerHTML = body; icons();
+  } catch (ex) {
+    if ($('pvBody')) $('pvBody').innerHTML = '<div class="flex items-center justify-center h-full p-4 text-center"><p class="text-red-500 text-sm font-medium">' + esc(ex.message) + '</p></div>';
+  }
+}
+async function renderPdf(data, id) {
+  try {
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
+    const box = $('pdfPages'); if (!box) return;
+    const width = Math.min(box.clientWidth - 24, 1000), ratio = window.devicePixelRatio || 1;
+    for (let n = 1; n <= pdf.numPages; n++) {
+      if (!S.preview || S.preview.id !== id) return;
+      const page = await pdf.getPage(n);
+      const scale = width / page.getViewport({ scale: 1 }).width;
+      const vp = page.getViewport({ scale: scale * ratio });
+      const c = document.createElement('canvas');
+      c.width = vp.width; c.height = vp.height; c.style.width = width + 'px';
+      c.className = 'bg-white shadow-sm rounded-lg select-none';
+      if (!canDownload()) c.oncontextmenu = () => false;
+      box.appendChild(c);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+  } catch (ex) {
+    const box = $('pdfPages');
+    if (box) box.innerHTML = '<div class="flex flex-col items-center justify-center h-full gap-3 text-center"><p class="text-red-500 text-sm font-medium">This PDF could not be displayed.</p>' +
+      (canDownload() ? '<p class="text-slate-400 text-xs">Use Download to open it on your computer.</p>' : '') + '</div>';
+  }
+}
+
+function closePreview() { if (S.preview && S.preview.url) URL.revokeObjectURL(S.preview.url); S.preview = null; $('preview').classList.add('hidden'); $('preview').innerHTML = ''; }
+$('preview').addEventListener('click', (e) => {
+  if (e.target === $('preview') || e.target.closest('[data-pvclose]')) return closePreview();
+  if (e.target.closest('[data-pvdl]') && S.preview && S.preview.url) {
+    const a = document.createElement('a'); a.href = S.preview.url; a.download = S.preview.name; document.body.appendChild(a); a.click(); a.remove();
+  }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.preview) closePreview(); });
+
+// ---------- Users ----------
+const roleBadge = (r) => r === 'super_admin' ? '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-600"><i data-lucide="shield-check" class="w-3 h-3"></i>Super Admin</span>'
+  : r === 'admin' ? '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700"><i data-lucide="shield" class="w-3 h-3"></i>Admin</span>'
+  : '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500"><i data-lucide="user" class="w-3 h-3"></i>View Only</span>';
+
+function branchField(role, value, name) {
+  if (role !== 'user') return '<div class="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-400 text-sm flex items-center h-[42px]"><span class="italic">All Branches (None)</span></div><input type="hidden" name="' + name + '" value="">';
+  return '<select name="' + name + '" required class="w-full px-3 py-2.5 rounded-lg border text-sm bg-white text-slate-900 border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">' +
+    '<option value="" disabled' + (value ? '' : ' selected') + '>— Select branch —</option>' + S.branches.map((b) => '<option' + (b === value ? ' selected' : '') + '>' + esc(b) + '</option>').join('') + '</select>';
+}
+
+async function loadUsers() {
+  if (!S.branches.length) S.branches = await call('branches');
+  $('addUserCard').classList.toggle('hidden', !isSuper());
+  $('usersViewOnly').classList.toggle('hidden', isSuper());
+  const f = $('addUserForm');
+  $('addBranchWrap').innerHTML = branchField(f.role.value, '', 'branch');
+  $('userTable').innerHTML = '<div class="space-y-2">' + '<div class="animate-pulse bg-slate-100 rounded-lg h-12"></div>'.repeat(3) + '</div>';
+  S.users = await call('listUsers', S.token);
+  renderUsers();
+}
+$('addUserForm').role.addEventListener('change', (e) => { $('addBranchWrap').innerHTML = branchField(e.target.value, '', 'branch'); });
+$('addUserForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target, btn = $('addUserBtn'), msg = $('addUserMsg');
+  btn.disabled = true; msg.innerHTML = '';
+  try {
+    const u = await call('createUser', S.token, f.username.value, f.password.value, f.role.value, f.branch ? f.branch.value : '');
+    msg.innerHTML = '<div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3"><div class="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></div><p class="text-green-700 text-sm">User "' + esc(u.username) + '" created successfully.</p></div>';
+    f.reset(); $('addBranchWrap').innerHTML = branchField('user', '', 'branch');
+    S.users = await call('listUsers', S.token); renderUsers();
+  } catch (ex) {
+    msg.innerHTML = '<div class="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3"><div class="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></div><p class="text-red-600 text-sm">' + esc(ex.message) + '</p></div>';
+  } finally { btn.disabled = false; }
+});
+$('userSearch').addEventListener('input', (e) => { S.userQ = e.target.value.trim().toLowerCase(); S.userPage = 1; renderUsers(); });
+
+function renderUsers() {
+  const me = S.profile, q = S.userQ;
+  const list = q ? S.users.filter((u) => (u.username + ' ' + (u.full_name || '') + ' ' + (u.branch || '') + ' ' + u.role).toLowerCase().includes(q)) : S.users;
+  $('userCount').textContent = q ? list.length + ' of ' + S.users.length : S.users.length + ' user' + (S.users.length !== 1 ? 's' : '');
+  if (!list.length) { $('userTable').innerHTML = '<div class="flex flex-col items-center justify-center py-12 text-center"><i data-lucide="user" class="w-10 h-10 text-slate-300 mb-2"></i><p class="text-slate-500">No users found.</p></div>'; return icons(); }
+  const pages = Math.max(1, Math.ceil(list.length / S.userSize)); S.userPage = Math.min(Math.max(1, S.userPage), pages);
+  const items = list.slice((S.userPage - 1) * S.userSize, S.userPage * S.userSize);
+  const sup = isSuper();
+  $('userTable').innerHTML = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-200">' +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500">Username</th><th class="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">Full Name</th>' +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500">Role</th><th class="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">Branch</th>' +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">Created At</th>' + (sup ? '<th class="text-right py-3 px-4 font-medium text-slate-500">Actions</th>' : '') + '</tr></thead>' +
+    '<tbody class="divide-y divide-slate-100">' + items.map((u) => {
+      const self = u.id === me.id;
+      return '<tr class="hover:bg-slate-50 transition-colors ' + (self ? 'bg-indigo-50/50' : '') + '"><td class="py-3 px-4"><div class="flex items-start sm:items-center gap-2.5">' +
+        '<div class="w-8 h-8 rounded-full bg-indigo-600/10 flex items-center justify-center flex-shrink-0"><span class="text-xs font-semibold text-indigo-600">' + esc(u.username.charAt(0).toUpperCase()) + '</span></div>' +
+        '<div class="min-w-0"><div class="flex items-center gap-1.5 flex-wrap"><span class="font-semibold text-slate-800">' + esc(u.username) + '</span>' + (self ? '<span class="text-xs text-indigo-600 font-medium bg-indigo-50 px-1.5 py-0.5 rounded">(you)</span>' : '') + '</div></div></div></td>' +
+        '<td class="py-3 px-4 hidden sm:table-cell text-slate-500">' + (u.full_name ? esc(u.full_name) : '<span class="text-slate-400 italic text-xs">Not set</span>') + '</td>' +
+        '<td class="py-3 px-4">' + roleBadge(u.role) + '</td>' +
+        '<td class="py-3 px-4 hidden sm:table-cell">' + (u.branch ? '<span class="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md">' + esc(u.branch) + '</span>' : '<span class="text-slate-400 italic text-xs">All Branches</span>') + '</td>' +
+        '<td class="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">' + esc(fmtDate(u.created_at)) + '</td>' +
+        (sup ? '<td class="py-3 px-3 sm:px-4"><div class="flex items-center justify-end gap-1 sm:gap-1.5">' +
+          (!self ? '<button data-uedit="' + u.id + '" class="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" aria-label="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button>' : '') +
+          (!self && (u.role !== 'super_admin' || me.username === 'manager') ? '<button data-udel="' + u.id + '" class="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" aria-label="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') +
+          '</div></td>' : '') + '</tr>';
+    }).join('') + '</tbody></table></div>' + pagination('users', S.userPage, S.userSize, list.length, 'user');
+  icons();
+}
+
+$('userTable').addEventListener('click', async (e) => {
+  const ed = e.target.closest('[data-uedit]'), del = e.target.closest('[data-udel]');
+  if (ed) {
+    const u = S.users.find((x) => x.id === ed.dataset.uedit);
+    const v = await modal({ title: 'Edit User: ' + u.username, confirm: 'Save Changes', fields: [
+      { name: 'full_name', label: 'Full Name', value: u.full_name || '' },
+      { name: 'role', label: 'Role', type: 'select', value: u.role, options: [{ value: 'user', label: 'User (View & Upload)' }, { value: 'admin', label: 'Admin (Upload & Delete)' }, { value: 'super_admin', label: 'Super Admin (Full Access)' }] },
+      { name: 'branch', label: 'Branch (Users only)', type: 'select', value: u.branch || '', options: [{ value: '', label: 'All Branches (None)' }].concat(S.branches.map((b) => ({ value: b, label: b }))) },
+      { name: 'password', label: 'Reset Password (optional)', type: 'password', placeholder: 'Leave blank to keep the current one' }],
+      submit: async (x) => {
+        if (x.role === 'user' && !x.branch) throw new Error('Branch is required for User accounts.');
+        await call('updateUser', S.token, u.id, { full_name: x.full_name, role: x.role, branch: x.branch });
+        if (x.password) await call('resetPassword', S.token, u.id, x.password);
+      } });
+    if (v) { S.users = await call('listUsers', S.token); renderUsers(); toast('User updated.'); }
+  }
+  if (del) {
+    const u = S.users.find((x) => x.id === del.dataset.udel);
+    const v = await modal({ title: 'Delete User', danger: true, confirm: 'Delete', message: 'Are you sure you want to delete "' + u.username + '"? This cannot be undone.', submit: () => call('deleteUser', S.token, u.id) });
+    if (v) { S.users = await call('listUsers', S.token); renderUsers(); }
+  }
+});
+
+// ---------- Audit logs ----------
+const ACTION_STYLES = {
+  LOGIN: ['Login', 'bg-green-100 text-green-700'], LOGOUT: ['Logout', 'bg-slate-100 text-slate-500'], LOGIN_FAILED: ['Login Failed', 'bg-red-100 text-red-700'],
+  UPLOAD: ['Upload', 'bg-blue-100 text-blue-700'], FILE_DELETE: ['File Deleted', 'bg-red-100 text-red-700'], FILE_RENAME: ['File Renamed', 'bg-amber-500/15 text-amber-600'],
+  FOLDER_CREATE: ['Folder Created', 'bg-purple-100 text-purple-700'], FOLDER_RENAME: ['Folder Renamed', 'bg-purple-100 text-purple-700'], FOLDER_DELETE: ['Folder Deleted', 'bg-purple-100 text-purple-700'],
+  USER_CREATE: ['User Created', 'bg-orange-100 text-orange-700'], USER_UPDATE: ['User Updated', 'bg-orange-100 text-orange-700'], USER_DELETE: ['User Deleted', 'bg-orange-100 text-orange-700'],
+  NAME_SET: ['Name Set', 'bg-indigo-600/10 text-indigo-600'], VIEW: ['View', 'bg-slate-100 text-slate-500'],
+  PASSWORD_CHANGE: ['Password Changed', 'bg-indigo-600/10 text-indigo-600'], PASSWORD_RESET: ['Password Reset', 'bg-orange-100 text-orange-700'], PROFILE_UPDATE: ['Profile Updated', 'bg-indigo-600/10 text-indigo-600'],
+};
+async function loadLogs() {
+  $('logTable').innerHTML = '<div class="space-y-2">' + '<div class="animate-pulse bg-slate-100 rounded-lg h-10"></div>'.repeat(5) + '</div>';
+  S.logs = await call('listLogs', S.token);
+  $('logRefreshed').textContent = new Date().toLocaleTimeString('en-PH');
+  renderLogs();
+}
+function renderLogs() {
+  const q = S.logQ;
+  const list = S.logs.filter((l) => {
+    if (q && !(l.actor_name + ' ' + l.action + ' ' + l.detail).toLowerCase().includes(q)) return false;
+    const d = (l.created_at || '').slice(0, 10);
+    if (S.logFrom && d < S.logFrom) return false;
+    if (S.logTo && d > S.logTo) return false;
+    return true;
+  });
+  const filtering = q || S.logFrom || S.logTo;
+  $('logCount').textContent = filtering ? list.length + ' of ' + S.logs.length : S.logs.length + ' log' + (S.logs.length !== 1 ? 's' : '');
+  $('logClear').classList.toggle('hidden', !filtering);
+  if (!list.length) { $('logTable').innerHTML = '<div class="flex flex-col items-center justify-center py-12 text-center"><i data-lucide="clipboard-list" class="w-10 h-10 text-slate-500 mb-2"></i><p class="text-slate-500">No audit logs yet.</p></div>'; return icons(); }
+  const pages = Math.max(1, Math.ceil(list.length / S.logSize)); S.logPage = Math.min(Math.max(1, S.logPage), pages);
+  const items = list.slice((S.logPage - 1) * S.logSize, S.logPage * S.logSize);
+  $('logTable').innerHTML = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-200">' +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500">Timestamp</th><th class="text-left py-3 px-4 font-medium text-slate-500 hidden sm:table-cell">Actor</th>' +
+    '<th class="text-left py-3 px-4 font-medium text-slate-500">Action</th><th class="text-left py-3 px-4 font-medium text-slate-500 hidden md:table-cell">Detail</th></tr></thead>' +
+    '<tbody class="divide-y divide-slate-100">' + items.map((l) => {
+      const s = ACTION_STYLES[l.action] || [l.action, 'bg-slate-100 text-slate-500'];
+      return '<tr class="hover:bg-slate-100/60 transition-colors"><td class="py-3 px-4 text-slate-500 text-xs whitespace-nowrap">' + esc(fmtDate(l.created_at)) + '</td>' +
+        '<td class="py-3 px-4 hidden sm:table-cell text-slate-700">' + esc(l.actor_name || '—') + '</td>' +
+        '<td class="py-3 px-4"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium ' + s[1] + '">' + esc(s[0]) + '</span></td>' +
+        '<td class="py-3 px-4 hidden md:table-cell text-slate-500 text-xs">' + esc(l.detail) + '</td></tr>';
+    }).join('') + '</tbody></table></div>' + pagination('logs', S.logPage, S.logSize, list.length, 'log');
+  icons();
+}
+$('logSearch').addEventListener('input', (e) => { S.logQ = e.target.value.trim().toLowerCase(); S.logPage = 1; renderLogs(); });
+$('logFrom').addEventListener('change', (e) => { S.logFrom = e.target.value; S.logPage = 1; renderLogs(); });
+$('logTo').addEventListener('change', (e) => { S.logTo = e.target.value; S.logPage = 1; renderLogs(); });
+$('logClear').addEventListener('click', () => { S.logQ = ''; S.logFrom = ''; S.logTo = ''; $('logSearch').value = ''; $('logFrom').value = ''; $('logTo').value = ''; renderLogs(); });
+$('logRefresh').addEventListener('click', loadLogs);
+setInterval(() => { if (S.view === 'logs' && S.token && document.visibilityState === 'visible') loadLogs(); }, 30000);
+
+// ---------- Start ----------
+(async () => {
+  try { S.token = sessionStorage.getItem('dv_token'); } catch (e) {}
+  if (!S.token) return show('login');
+  try { await load(); } catch (e) { signOutLocal(); }
+})();
+</script>
+</body>
+</html>

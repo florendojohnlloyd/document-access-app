@@ -34,6 +34,15 @@ A server-only change (any `.js` file) needs steps 2 only.
 - **Folders:** use the Month dropdown. The + adds a subfolder, the pencil renames (super admin only), and the trash deletes an empty folder.
 - **Deleted files** go to the owner's Drive trash and can be recovered for 30 days.
 
+## Backup
+
+On the migration lead's PC, Google Drive for desktop mounts the Drive as `G:`. The Windows scheduled task **DocuVault Backup** runs at logon, then hourly. It copies new and changed files from `G:\My Drive\DocuVault\DocuVault Files` to `C:\Users\Web-Dev\DocuVault-Backup-Live\DocuVault Files` with robocopy, and never deletes anything.
+
+- Script: `C:\Users\Web-Dev\DocuVault-Backup-Tools\backup-docuvault.ps1`
+- Log: `C:\Users\Web-Dev\DocuVault-Backup-Tools\backup-log.txt`
+- Status: double-click **Check DocuVault Backup** on the Desktop. It shows the files in Drive, the files in the backup, and DONE or STILL COPYING.
+- `C:\Users\Web-Dev\DocuVault-backup-2026-10-27` is a frozen snapshot of the old Supabase system. Do not mix the two.
+
 ## Watch
 
 - **Drive storage:** the owner account has 15 GB, and files grow about 8–10 GB a month. Google One is needed.

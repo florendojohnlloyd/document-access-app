@@ -131,7 +131,7 @@
               <span class="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">No size limit · Multi-file</span>
             </div>
             <div id="uploadZone" class="w-full space-y-3"></div>
-            <input id="fileInput" type="file" multiple class="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.zip,.csv,.txt">
+            <input id="fileInput" type="file" multiple class="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.zip,.rar,.7z,.csv,.txt">
           </div>
           <div class="border-t border-slate-100"></div>
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -225,9 +225,9 @@
 // ---------- State & helpers ----------
 const ROLE_LABEL = { super_admin: 'Super Admin', admin: 'Admin', user: 'User' };
 const MIME = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', csv: 'text/csv', txt: 'text/plain',
-  zip: 'application/zip', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  zip: 'application/zip', rar: 'application/vnd.rar', '7z': 'application/x-7z-compressed', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
-const ALLOWED = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'csv', 'txt'];
+const ALLOWED = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar', '7z', 'csv', 'txt'];
 const S = {
   token: null, profile: null, files: [], folders: [], branches: [], view: 'files', sidebarOpen: window.innerWidth >= 768,
   folder: null, folderOpen: false, folderSearch: '', expanded: new Set(), pill: 'ALL', q: '', sort: null, page: 1, size: 15, selected: new Set(),

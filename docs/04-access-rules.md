@@ -20,4 +20,4 @@ Branch users also see the month folders above their branch (for example `Month /
 Other rules:
 - Users set their full name at first login. It then locks, except for super admins.
 - Super admins cannot delete themselves. Only the account named `manager` can delete another super admin.
-- Allowed file types: pdf, png, jpg, jpeg, doc, docx, xls, xlsx, zip, csv, txt.
+- Allowed file types: pdf, png, jpg, jpeg, doc, docx, xls, xlsx, zip, rar, 7z, csv, txt.

@@ -486,10 +486,24 @@ async function askName() {
 function folderTree() {
   const kids = {}; const ids = new Set(S.folders.map((f) => f.id));
   S.folders.forEach((f) => { const p = f.parent_folder_id && ids.has(f.parent_folder_id) ? f.parent_folder_id : ''; (kids[p] = kids[p] || []).push(f); });
-  Object.values(kids).forEach((l) => l.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })));
+  Object.values(kids).forEach((l) => l.sort((a, b) => compareFolderNames(a.name, b.name)));
   return kids;
 }
 function folderDepth(id) { let d = 0, f = S.folders.find((x) => x.id === id); while (f && f.parent_folder_id) { d++; f = S.folders.find((x) => x.id === f.parent_folder_id); } return d; }
+
+// Month folders go in calendar order ("JANUARY 2026" before "FEBRUARY 2026", 2025 before 2026), before any other folder.
+const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+function monthOrder(name) {
+  const m = /^([A-Za-z]+)(?:\s+(\d{4}))?(?![A-Za-z])/.exec(String(name).trim());
+  const month = m ? MONTHS.indexOf(m[1].toUpperCase()) : -1;
+  return month === -1 ? null : Number(m[2] || 0) * 12 + month;
+}
+function compareFolderNames(a, b) {
+  const x = monthOrder(a), y = monthOrder(b);
+  if (x !== null && y !== null && x !== y) return x - y;
+  if ((x === null) !== (y === null)) return x === null ? 1 : -1;
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
 
 function renderFolderSelect() {
   const sel = S.folders.find((f) => f.id === S.folder);
@@ -586,7 +600,7 @@ function subfolders(id) {
   const kids = (parent) => S.folders.filter((f) => (f.parent_folder_id || null) === parent);
   let shown = kids(id);
   while (shown.length === 1 && kids(shown[0].id).length && !S.files.some((f) => f.folder_id === shown[0].id)) shown = kids(shown[0].id);
-  return shown.slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+  return shown.slice().sort((a, b) => compareFolderNames(a.name, b.name));
 }
 function folderCards(shown) {
   const parentOf = {}, counts = {};
@@ -732,7 +746,7 @@ function renderUploadZone() {
     '<i data-lucide="paperclip" class="w-4 h-4 text-indigo-500 flex-shrink-0"></i><span class="font-semibold">' + (total ? 'Add more files (' + total + ' selected)' : 'Choose files') + '</span>' +
     '<span class="text-xs text-slate-400 hidden sm:inline">(Multiple files supported · Unlimited size)</span></button>';
   if (total && needPick) {
-    const opts = uploadableFolders().map((f) => ({ id: f.id, label: folderPath(f.id) })).sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+    const opts = uploadableFolders().map((f) => ({ id: f.id, label: folderPath(f.id) })).sort((a, b) => compareFolderNames(a.label, b.label));
     h += '<select data-up="folder" class="w-full sm:w-auto px-3.5 py-2.5 rounded-xl border text-sm transition-colors bg-white text-slate-800 border-slate-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 ' + (S.uploadFolder ? '' : 'border-amber-300 text-slate-500') + '"' + (S.uploading ? ' disabled' : '') + '>' +
       '<option value="" disabled' + (S.uploadFolder ? '' : ' selected') + '>— Select Month / Folder —</option>' + opts.map((o) => '<option value="' + o.id + '"' + (o.id === S.uploadFolder ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
   }

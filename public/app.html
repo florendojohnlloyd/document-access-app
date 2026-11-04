@@ -850,17 +850,16 @@ async function openPreview(id) {
   const pv = $('preview'); pv.innerHTML = previewFrame(f.name, spinner, fmtSize(f.size)); pv.classList.remove('hidden'); icons();
   try {
     if (ext(f.name) === 'pdf') loadPdfJs().catch(() => {});
-    const first = await call('getChunk', S.token, id, 0);
-    if (!S.preview || S.preview.id !== id) return;
-    // The first slice gives the size; the rest come three at a time.
-    const parts = [b64ToBytes(first.data)], size = first.size, step = first.next, starts = [];
+    // The list already gives the size, so all the slices can start at once, three at a time.
+    const parts = [], size = f.size, step = 2097152, starts = [0];
     for (let at = step; at < size; at += step) starts.push(at);
-    let got = step;
+    let got = 0;
     const fetchSlices = async () => {
       while (starts.length && S.preview && S.preview.id === id) {
-        const at = starts.shift(), r = await call('getChunk', S.token, id, at);
+        const at = starts.shift(), r = await call('getChunk', S.token, id, at, step);
+        if (r.next !== Math.min(at + step, size)) throw new Error('Could not read the file. Please try again.');
         parts[at / step] = b64ToBytes(r.data); got += parts[at / step].length;
-        const p = $('pvPct'); if (p) p.textContent = 'Loading ' + Math.round((got / size) * 100) + '%';
+        const p = $('pvPct'); if (p && size > step) p.textContent = 'Loading ' + Math.round((got / size) * 100) + '%';
       }
     };
     await Promise.all([fetchSlices(), fetchSlices(), fetchSlices()]);

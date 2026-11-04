@@ -48,6 +48,10 @@ On the migration lead's PC, Google Drive for desktop mounts the Drive as `G:`. T
 - **Drive storage:** the owner account has 15 GB, and files grow about 8–10 GB a month. Google One is needed.
 - **Apps Script quotas:** at most about 30 calls run at once for the owner account. Each browser uploads 3 files at a time.
 
-## Table cache
+## Table cache and log queue
 
-The server keeps the Users, Folders and Files tabs in Apps Script's cache for up to 5 minutes (`TABLE_TTL` in `Config.js`). Every change made through the app clears the cache at once. A change made by hand in the Sheet, including removing a user, can take up to 5 minutes to show.
+The server keeps the Users, Folders and Files tabs in Apps Script's cache. Every change made through the app clears the cache at once. A time-driven trigger runs `warmCaches` every 5 minutes: it reloads those tabs, so a change made by hand in the Sheet, including removing a user, can take up to 5 minutes to show. If the trigger stops, the cache expires after 10 minutes (`TABLE_TTL` in `Config.js`) and the app still works, only slower.
+
+Audit log entries wait in Script Properties (keys starting `logq:`) and move to the Logs tab when `warmCaches` runs or when anything reads the Logs tab, so the Audit Logs page is always complete. If an entry cannot be queued, it is written straight to the tab.
+
+`showTimings` (in `Code.gs`) lists how long the last 200 web app calls took, step by step. Times are UTC.

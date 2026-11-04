@@ -19,7 +19,7 @@ DocuVault is a document system for ES Print Media branch payables. Since 27 Oct 
    - the Apps Script `Index.html`, then `clasp push -f` and `clasp deploy -i <deployment ID> -d "..."` (same deployment, so the URL stays the same);
    - and `public/app.html`, which is the same file without the `<base target="_top">` line.
 
-   A server-only change (the `.js` files) needs only the Apps Script deploy.
+   A server-only change (the `.js` files) needs only the Apps Script deploy. The page's Tailwind CSS is prebuilt: if a change adds a class the page did not use before, run `node build-css.js` in the Apps Script folder first (it needs `npm install` in this repo).
 2. **Never push to `master` without the user's explicit "go" for that push.** `master` auto-deploys to Vercel production.
 3. Permissions are enforced on the server and must match `docs/04-access-rules.md`. Test with `runTests` in the Apps Script editor; it cleans up after itself.
 4. Never print, commit or paste secrets, password hashes or keys. Never type a user's real password; ask the user to log in.

@@ -2,7 +2,7 @@
 
 ## Changing the UI: always two places
 
-1. Edit `C:\Users\Web-Dev\docuvault-appscript\src\Index.html`.
+1. Edit `C:\Users\Web-Dev\docuvault-appscript\src\Index.html`. If you add a CSS class the page did not use before, run `node build-css.js` in `docuvault-appscript`: the Tailwind CSS is built into the page, not compiled in the browser.
 2. Push and redeploy Apps Script to the **same** deployment, so the URL does not change:
    ```
    cd C:\Users\Web-Dev\docuvault-appscript
@@ -55,3 +55,7 @@ The server keeps the Users, Folders and Files tabs in Apps Script's cache. Every
 Audit log entries wait in Script Properties (keys starting `logq:`) and move to the Logs tab when `warmCaches` runs or when anything reads the Logs tab, so the Audit Logs page is always complete. If an entry cannot be queued, it is written straight to the tab.
 
 `showTimings` (in `Code.gs`) lists how long the last 200 web app calls took, step by step. Times are UTC.
+
+## Uploads
+
+On the live page the browser sends each file straight to Drive: `startUpload` opens a Drive session tied to the page's origin (`DIRECT_ORIGIN` in `Config.js`), and `finishUpload` asks Drive whether the file arrived before recording it. If the browser cannot reach Drive, the page falls back to `uploadChunk`, which sends slices through the server.

@@ -720,9 +720,19 @@ async function renameFile(id) {
 async function deleteFiles(ids) {
   const one = ids.length === 1, f = S.files.find((x) => x.id === ids[0]);
   const v = await modal({ title: one ? 'Delete File' : 'Delete Selected Files', danger: true, confirm: one ? 'Delete' : 'Delete ' + ids.length + ' Files',
-    message: one ? 'Are you sure you want to delete "' + (f ? f.name : '') + '"? This action cannot be undone.' : 'Are you sure you want to delete ' + ids.length + ' selected files? This action cannot be undone.',
-    submit: () => call('deleteFiles', S.token, ids) });
-  if (v) { S.selected.clear(); await reloadFiles(); }
+    message: one ? 'Are you sure you want to delete "' + (f ? f.name : '') + '"? This action cannot be undone.' : 'Are you sure you want to delete ' + ids.length + ' selected files? This action cannot be undone.' });
+  if (!v) return;
+  // The files leave the list at once. If the server refuses, the real list comes back.
+  const gone = new Set(ids);
+  S.files = S.files.filter((x) => !gone.has(x.id)); S.selected.clear(); renderFiles();
+  try {
+    await call('deleteFiles', S.token, ids);
+    saveList({ profile: S.profile, folders: S.folders, files: S.files });
+    toast(one ? 'File deleted.' : ids.length + ' files deleted.');
+  } catch (ex) {
+    toast(ex.message, 'error');
+    try { await reloadFiles(); } catch (e) {}
+  }
 }
 
 // ---------- Upload zone (DocuVault's UploadZone) ----------

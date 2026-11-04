@@ -6,11 +6,6 @@
   <title>DocuVault</title>
   <script src="https://cdn.tailwindcss.com/3.4.5"></script>
   <script src="https://unpkg.com/lucide@0.400.0/dist/umd/lucide.min.js"></script>
-  <!-- PDF.js renders PDFs onto canvases: Chrome's own viewer is blocked inside Apps Script's sandboxed frame.
-       The worker script is loaded on the page too, so PDF.js can fall back to it when a cross-origin worker is refused. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
-  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }, boxShadow: { xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)' } } } };</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -379,7 +374,7 @@ $('loginForm').addEventListener('submit', async (e) => {
     const r = await call('login', $('loginUser').value, $('loginPass').value);
     S.token = r.token; try { sessionStorage.setItem('dv_token', r.token); } catch (x) {}
     $('loginPass').value = '';
-    await load();
+    await load(r.data);
   } catch (ex) { err.querySelector('p').textContent = ex.message; err.classList.remove('hidden'); }
   finally { btn.disabled = false; btn.innerHTML = 'Sign In <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>'; icons(); }
 });
@@ -464,8 +459,8 @@ $('profileBtn').addEventListener('click', async () => {
 });
 
 // ---------- Data ----------
-async function load() {
-  const d = await call('listData', S.token);
+async function load(loaded) {
+  const d = loaded || await call('listData', S.token);
   S.profile = d.profile; S.files = d.files; S.folders = d.folders;
   // Branch users: open the month levels so their branch folders show straight away.
   if (!isSuper() && S.profile.branch) { const up = new Set(uploadableFolders().map((f) => f.id)); S.folders.forEach((f) => { if (!up.has(f.id)) S.expanded.add(f.id); }); }
@@ -822,13 +817,22 @@ async function openPreview(id) {
   S.preview = { id, url: null, name: f.name };
   const pv = $('preview'); pv.innerHTML = previewFrame(f.name, spinner, fmtSize(f.size)); pv.classList.remove('hidden'); icons();
   try {
-    const parts = []; let start = 0, size = 1;
-    while (start < size) {
-      const r = await call('getChunk', S.token, id, start);
-      if (!S.preview || S.preview.id !== id) return;
-      parts.push(b64ToBytes(r.data)); start = r.next; size = r.size;
-      const p = $('pvPct'); if (p && size > 8388608) p.textContent = 'Loading ' + Math.round((start / size) * 100) + '%';
-    }
+    if (ext(f.name) === 'pdf') loadPdfJs().catch(() => {});
+    const first = await call('getChunk', S.token, id, 0);
+    if (!S.preview || S.preview.id !== id) return;
+    // The first slice gives the size; the rest come three at a time.
+    const parts = [b64ToBytes(first.data)], size = first.size, step = first.next, starts = [];
+    for (let at = step; at < size; at += step) starts.push(at);
+    let got = step;
+    const fetchSlices = async () => {
+      while (starts.length && S.preview && S.preview.id === id) {
+        const at = starts.shift(), r = await call('getChunk', S.token, id, at);
+        parts[at / step] = b64ToBytes(r.data); got += parts[at / step].length;
+        const p = $('pvPct'); if (p) p.textContent = 'Loading ' + Math.round((got / size) * 100) + '%';
+      }
+    };
+    await Promise.all([fetchSlices(), fetchSlices(), fetchSlices()]);
+    if (!S.preview || S.preview.id !== id) return;
     const e = ext(f.name), url = URL.createObjectURL(new Blob(parts, { type: MIME[e] || 'application/octet-stream' }));
     S.preview.url = url;
     $('pvActions').innerHTML = canDownload()
@@ -851,8 +855,22 @@ async function openPreview(id) {
     if ($('pvBody')) $('pvBody').innerHTML = '<div class="flex items-center justify-center h-full p-4 text-center"><p class="text-red-500 text-sm font-medium">' + esc(ex.message) + '</p></div>';
   }
 }
+// PDF.js renders PDFs onto canvases: Chrome's own viewer is blocked inside Apps Script's sandboxed frame. It loads with the
+// first PDF, not with the page. The worker script is loaded on the page too, so PDF.js can fall back to it when a
+// cross-origin worker is refused.
+let pdfJsLoading = null;
+function loadPdfJs() {
+  const base = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  const add = (file) => new Promise((ok, fail) => { const s = document.createElement('script'); s.src = base + file; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+  if (!pdfJsLoading) {
+    pdfJsLoading = add('pdf.min.js').then(() => add('pdf.worker.min.js')).then(() => { pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js'; });
+    pdfJsLoading.catch(() => { pdfJsLoading = null; });
+  }
+  return pdfJsLoading;
+}
 async function renderPdf(data, id) {
   try {
+    await loadPdfJs();
     const pdf = await pdfjsLib.getDocument({ data }).promise;
     const box = $('pdfPages'); if (!box) return;
     const width = Math.min(box.clientWidth - 24, 1000), ratio = window.devicePixelRatio || 1;

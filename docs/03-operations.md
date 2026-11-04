@@ -47,3 +47,7 @@ On the migration lead's PC, Google Drive for desktop mounts the Drive as `G:`. T
 
 - **Drive storage:** the owner account has 15 GB, and files grow about 8–10 GB a month. Google One is needed.
 - **Apps Script quotas:** at most about 30 calls run at once for the owner account. Each browser uploads 3 files at a time.
+
+## Table cache
+
+The server keeps the Users, Folders and Files tabs in Apps Script's cache for up to 5 minutes (`TABLE_TTL` in `Config.js`). Every change made through the app clears the cache at once. A change made by hand in the Sheet, including removing a user, can take up to 5 minutes to show.
